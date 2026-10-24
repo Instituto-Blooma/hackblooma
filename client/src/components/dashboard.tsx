@@ -12,7 +12,8 @@ import {
 } from '@talentum-ventures/convex-datatable';
 import { useConvexDataSource, useConvexPresence } from '@talentum-ventures/convex-datatable/convex';
 import { useConvexAuth, useMutation, useQuery } from 'convex/react';
-import { CheckCircle2, LogOut, User, Zap } from 'lucide-react';
+import { CheckCircle2, LogOut, User } from 'lucide-react';
+import { BloomaWordmark } from '@/components/blooma-brand';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -424,10 +425,7 @@ export function Dashboard() {
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 items-center justify-between gap-4 px-4 md:px-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
-              <Zap className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="font-semibold text-lg hidden sm:inline-block">Dashboard</span>
+            <BloomaWordmark compact />
             <div data-testid="org-switcher">
               <OrganizationContextControl isPlatformAdmin={Boolean(isPlatformAdmin)} />
             </div>
@@ -485,9 +483,9 @@ export function Dashboard() {
       </header>
 
       <main className="flex-1 container px-4 md:px-6 py-6 md:py-8">
-        <div className="mx-auto max-w-6xl space-y-6">
+        <div className="space-y-6">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            <h1 className="font-serif text-2xl font-semibold tracking-tight sm:text-3xl">
               Welcome to your Dashboard!
             </h1>
             <p className="mt-1 text-muted-foreground">
@@ -537,7 +535,7 @@ export function Dashboard() {
       <footer className="border-t py-4">
         <div className="container px-4 md:px-6">
           <p className="text-center text-sm text-muted-foreground">
-            Built with Vite + Convex + convex-datatable
+            Instituto Blooma · Meninas fazendo o futuro
           </p>
         </div>
       </footer>

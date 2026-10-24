@@ -2,6 +2,7 @@ import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { AcceptInvitation, useAcceptInvitation } from '@djpanda/convex-tenants/react';
 import { Authenticated, Unauthenticated, useConvexAuth } from 'convex/react';
 import { AuthForm } from '@/components/auth-form';
+import { BloomaDotField } from '@/components/blooma-brand';
 import { Button } from '@/components/ui/button';
 import { api } from '../../../convex/_generated/api';
 
@@ -55,8 +56,9 @@ export function AcceptInvitationPage() {
   return (
     <>
       <Unauthenticated>
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="w-full max-w-md space-y-6">
+        <div className="relative min-h-screen flex items-center justify-center overflow-hidden p-4">
+          <BloomaDotField />
+          <div className="relative z-10 w-full max-w-md space-y-6">
             <AcceptInvitationContent />
             <AuthForm />
           </div>

@@ -5,6 +5,7 @@ import {
   TeamsSection,
   useTenantsData,
 } from '@djpanda/convex-tenants/react';
+import { BloomaWordmark } from '@/components/blooma-brand';
 import { Button } from '@/components/ui/button';
 import { ImpersonationBanner } from '@/components/impersonation-banner';
 
@@ -54,8 +55,9 @@ export function OrgSettingsPage({ section }: { section: SettingsSection }) {
       <header className="border-b">
         <div className="container space-y-4 px-4 py-6 md:px-6">
           <div className="flex items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-semibold">{currentOrganization.name}</h1>
+            <div className="space-y-2">
+              <BloomaWordmark compact />
+              <h1 className="font-serif text-2xl font-semibold">{currentOrganization.name}</h1>
               <p className="text-sm text-muted-foreground">Organization settings</p>
             </div>
             <Link to="/">

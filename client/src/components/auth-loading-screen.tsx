@@ -1,9 +1,13 @@
+import { BloomaWordmark } from '@/components/blooma-brand';
+
 export function AuthLoadingScreen() {
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4 bg-background"
+      className="min-h-screen flex flex-col items-center justify-center gap-4 p-4 bg-background"
       data-testid="auth-loading"
       aria-busy="true"
-    />
+    >
+      <BloomaWordmark compact />
+    </div>
   );
 }

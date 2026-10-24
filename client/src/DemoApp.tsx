@@ -1,15 +1,18 @@
 import { Button } from '@/components/ui/button';
+import { BloomaDotField, BloomaWordmark } from '@/components/blooma-brand';
 
 export function DemoApp() {
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex max-w-3xl flex-col gap-8 px-6 py-16 sm:py-24">
+    <main className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      <BloomaDotField />
+      <div className="relative mx-auto flex max-w-3xl flex-col gap-8 px-6 py-16 sm:py-24">
+        <BloomaWordmark />
         <div className="inline-flex w-fit items-center rounded-full border bg-muted px-3 py-1 text-sm text-muted-foreground">
           Demo mode
         </div>
 
         <section className="space-y-3">
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+          <h1 className="font-serif text-4xl font-semibold tracking-tight sm:text-5xl">
             Convex is not configured
           </h1>
           <p className="max-w-2xl text-base text-muted-foreground sm:text-lg">
@@ -22,7 +25,7 @@ export function DemoApp() {
         </section>
 
         <section className="rounded-2xl border bg-card p-6 shadow-sm">
-          <h2 className="text-lg font-medium">Next steps</h2>
+          <h2 className="font-serif text-lg font-medium">Next steps</h2>
           <ol className="mt-4 space-y-3 text-sm text-muted-foreground">
             <li>1. Start Convex with `pnpm run dev:backend` in the project root.</li>
             <li>2. Confirm `.env.local` contains `CONVEX_DEPLOYMENT` and `VITE_CONVEX_URL`.</li>

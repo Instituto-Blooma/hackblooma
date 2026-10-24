@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { BloomaWordmark } from '@/components/blooma-brand';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
@@ -44,16 +45,18 @@ export function AuthForm() {
 
   return (
     <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Welcome</CardTitle>
-        <CardDescription className="text-center">
-          Sign in with your Google account to continue
-        </CardDescription>
+      <CardHeader className="space-y-4">
+        <BloomaWordmark className="justify-center" />
+        <div className="space-y-1 text-center">
+          <CardTitle className="font-serif text-2xl font-semibold tracking-tight">
+            Sign in
+          </CardTitle>
+          <CardDescription>Continue with Google to access Instituto Blooma.</CardDescription>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <Button
           type="button"
-          variant="outline"
           className="w-full"
           onClick={handleGoogleSignIn}
           disabled={isLoading}
