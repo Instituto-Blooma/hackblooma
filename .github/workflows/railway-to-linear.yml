@@ -1,0 +1,806 @@
+name: Sync Railway Preview to Linear
+
+on:
+  deployment_status:
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+env:
+  # Change these if your Linear workflow state names are different.
+  LINEAR_DEV_STATUS: Dev
+  LINEAR_AUTO_TEST_STATUS: Auto Test Pending
+
+jobs:
+  sync-to-linear:
+    # PR preview deploys only — staging/prod deploys on main/prod are handled elsewhere.
+    if: |
+      contains(fromJson('["pending", "in_progress", "success", "failure", "error", "inactive"]'),
+               github.event.deployment_status.state) &&
+      github.event.deployment.ref != 'main' &&
+      github.event.deployment.ref != 'prod'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      # ────────────────────────────────────────────────────────────────────────
+      # 1. Extract deployment info, resolve target Linear status, and find issue key
+      # ────────────────────────────────────────────────────────────────────────
+      - name: Extract deployment info
+        id: extract
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BRANCH="${{ github.event.deployment.ref }}"
+          STATE="${{ github.event.deployment_status.state }}"
+          ENV_URL="${{ github.event.deployment_status.environment_url }}"
+          ENV_NAME="${{ github.event.deployment_status.environment }}"
+          DEPLOYMENT_SHA="${{ github.event.deployment.sha }}"
+          SHORT_SHA="${DEPLOYMENT_SHA:0:7}"
+          LOG_URL="${{ github.event.deployment_status.log_url }}"
+          REPO="${{ github.repository }}"
+
+          echo "Branch        : $BRANCH"
+          echo "State         : $STATE"
+          echo "Environment   : $ENV_NAME"
+          echo "Environment URL: $ENV_URL"
+          echo "Log URL       : $LOG_URL"
+          echo "Deployment SHA: $DEPLOYMENT_SHA"
+
+          # Extract TEAM-NUMBER from branch, e.g. TAL-123.
+          ISSUE_ID=$(echo "$BRANCH" | grep -ioE '[A-Z]+-[0-9]+' | head -1 | tr '[:lower:]' '[:upper:]' || true)
+
+          if [ -z "$ISSUE_ID" ]; then
+            echo "⚠️ No Linear issue ID found in branch '$BRANCH'. Will try PR title/body next."
+          fi
+
+          # Target state rule:
+          # - success with preview URL => Auto Test Pending
+          # - anything else => Dev
+          if [ "$STATE" = "success" ] && [ -n "$ENV_URL" ]; then
+            TARGET_STATUS="${LINEAR_AUTO_TEST_STATUS}"
+            SHOULD_ATTACH_PREVIEW="true"
+          else
+            TARGET_STATUS="${LINEAR_DEV_STATUS}"
+            SHOULD_ATTACH_PREVIEW="false"
+          fi
+
+          # Resolve display values.
+          case "$STATE" in
+            pending|in_progress)
+              EMOJI="🔄"
+              LABEL="Building"
+              SUBTITLE="Railway · ${ENV_NAME:-preview} · building $SHORT_SHA…"
+              LINK_URL="${LOG_URL:-https://railway.app}"
+              ;;
+            success)
+              EMOJI="✅"
+              LABEL="Live"
+              SUBTITLE="Railway · ${ENV_NAME:-preview} · $SHORT_SHA"
+              LINK_URL="$ENV_URL"
+              ;;
+            failure|error)
+              EMOJI="❌"
+              LABEL="Failed"
+              SUBTITLE="Railway · ${ENV_NAME:-preview} · $SHORT_SHA failed"
+              LINK_URL="${LOG_URL:-https://railway.app}"
+              ;;
+            inactive)
+              EMOJI="⚪"
+              LABEL="Inactive"
+              SUBTITLE="Railway · ${ENV_NAME:-preview} · inactive"
+              LINK_URL="${LOG_URL:-https://railway.app}"
+              ;;
+            *)
+              EMOJI="⚙️"
+              LABEL="$STATE"
+              SUBTITLE="Railway · ${ENV_NAME:-preview} · $SHORT_SHA"
+              LINK_URL="${ENV_URL:-${LOG_URL:-https://railway.app}}"
+              ;;
+          esac
+
+          TITLE="$EMOJI Railway Preview"
+
+          {
+            echo "initial_issue_id=$ISSUE_ID"
+            echo "state=$STATE"
+            echo "label=$LABEL"
+            echo "title=$TITLE"
+            echo "subtitle=$SUBTITLE"
+            echo "link_url=$LINK_URL"
+            echo "env_url=$ENV_URL"
+            echo "env_name=$ENV_NAME"
+            echo "log_url=$LOG_URL"
+            echo "branch=$BRANCH"
+            echo "repo=$REPO"
+            echo "deployment_sha=$DEPLOYMENT_SHA"
+            echo "short_sha=$SHORT_SHA"
+            echo "target_status=$TARGET_STATUS"
+            echo "should_attach_preview=$SHOULD_ATTACH_PREVIEW"
+          } >> "$GITHUB_OUTPUT"
+
+      # ────────────────────────────────────────────────────────────────────────
+      # 2. Find associated PR, extract Linear issue key, resolve preview URL
+      # ────────────────────────────────────────────────────────────────────────
+      - name: Resolve PR and Linear issue key
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const initialIssueId = `${{ steps.extract.outputs.initial_issue_id }}`;
+            const branch = `${{ steps.extract.outputs.branch }}`;
+            const sha = `${{ steps.extract.outputs.deployment_sha }}`;
+            const envUrl = `${{ steps.extract.outputs.env_url }}`;
+
+            const { owner, repo } = context.repo;
+
+            let pr = null;
+
+            try {
+              const result = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                owner,
+                repo,
+                commit_sha: sha,
+              });
+
+              pr = result.data[0] || null;
+            } catch (error) {
+              core.warning(`Could not resolve PR from deployment SHA ${sha}: ${error.message}`);
+            }
+
+            // Linear keys are uppercase (TAL-244). A case-insensitive scan also
+            // matches Tailwind tokens such as neutral-200 and gray-200.
+            function uppercaseIssueKeys(text) {
+              return [...text.matchAll(/\b([A-Z][A-Z0-9]{1,9})-(\d+)\b/g)].map(
+                (match) => `${match[1]}-${match[2]}`,
+              );
+            }
+
+            function branchIssueKeys(text) {
+              return [...text.matchAll(/\b([A-Za-z][A-Za-z0-9]{1,9})-(\d+)\b/g)].map(
+                (match) => `${match[1].toUpperCase()}-${match[2]}`,
+              );
+            }
+
+            const issueId =
+              uppercaseIssueKeys(
+                [initialIssueId, pr?.title || "", pr?.body || "", pr?.head?.ref || "", branch].join(
+                  "\n",
+                ),
+              )[0] ||
+              branchIssueKeys([pr?.head?.ref || "", branch, initialIssueId].join("\n"))[0] ||
+              "";
+
+            if (!issueId) {
+              core.warning(`No Linear issue key found in branch, PR title, or PR body.`);
+              core.setOutput("found", "false");
+              core.setOutput("preview_url", "");
+              return;
+            }
+            const webLinkPattern = /\[Web\]\((https:\/\/[^)]+\.up\.railway\.app)\)/;
+            const anyRailwayAppPattern = /(https:\/\/[^\s)]+\.up\.railway\.app)/;
+
+            function isRailwayBotComment(comment) {
+              const login = comment.user?.login ?? "";
+              return (
+                comment.body?.includes("railway-bot-comment") &&
+                (login === "railway-app" ||
+                  login === "railway-app[bot]" ||
+                  login.startsWith("railway-app"))
+              );
+            }
+
+            function extractRailwayPreviewUrl(comments) {
+              const railwayComment = [...comments]
+                .reverse()
+                .find(isRailwayBotComment);
+              if (!railwayComment) {
+                return { previewUrl: "", railwayComment: null };
+              }
+              const previewUrl =
+                railwayComment.body?.match(webLinkPattern)?.[1] ||
+                railwayComment.body?.match(anyRailwayAppPattern)?.[1] ||
+                "";
+              return { previewUrl, railwayComment };
+            }
+
+            function sleep(ms) {
+              return new Promise((resolve) => setTimeout(resolve, ms));
+            }
+
+            let previewUrl = envUrl.includes("railway.com/project") ? "" : envUrl;
+
+            if (!previewUrl && pr?.number) {
+              const maxAttempts = 5;
+              const delayMs = 3000;
+
+              for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                const { data: comments } = await github.rest.issues.listComments({
+                  owner,
+                  repo,
+                  issue_number: pr.number,
+                });
+                const { previewUrl: resolvedUrl, railwayComment } =
+                  extractRailwayPreviewUrl(comments);
+                previewUrl = resolvedUrl;
+                if (previewUrl) {
+                  core.info(
+                    `Resolved Railway preview URL on attempt ${attempt}: ${previewUrl}`,
+                  );
+                  break;
+                }
+                if (railwayComment) {
+                  core.warning(
+                    `Found Railway comment from ${railwayComment.user?.login} but no .up.railway.app URL.`,
+                  );
+                }
+                if (attempt < maxAttempts) {
+                  core.warning(
+                    `Railway preview URL not found in PR comments (attempt ${attempt}/${maxAttempts}). Retrying...`,
+                  );
+                  await sleep(delayMs);
+                }
+              }
+
+              if (!previewUrl) {
+                core.warning(
+                  "No Railway app preview URL found in PR comments. Linear attachment will be skipped.",
+                );
+              }
+            } else if (previewUrl) {
+              core.info(`Using deployment environment URL as preview URL: ${previewUrl}`);
+            }
+
+            core.setOutput("found", "true");
+            core.setOutput("issue_id", issueId);
+            core.setOutput("pr_url", pr?.html_url || "");
+            core.setOutput("pr_number", pr?.number ? String(pr.number) : "");
+            core.setOutput("preview_url", previewUrl);
+
+            core.info(`Linear issue key: ${issueId}`);
+            if (pr) {
+              core.info(`Associated PR: ${pr.html_url}`);
+            }
+
+      # ────────────────────────────────────────────────────────────────────────
+      # 3. Resolve Linear issue UUID
+      # ────────────────────────────────────────────────────────────────────────
+      - name: Resolve Linear issue UUID
+        id: resolve
+        if: steps.pr.outputs.found == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          linear_graphql() {
+            local body="$1"
+            local label="${2:-Linear GraphQL response}"
+            local http_code response raw
+
+            raw=$(curl -sS -w "\n%{http_code}" -X POST https://api.linear.app/graphql \
+              -H "Authorization: ${{ secrets.LINEAR_API_KEY }}" \
+              -H "Content-Type: application/json" \
+              -d "$body")
+            http_code=$(echo "$raw" | tail -n1)
+            response=$(echo "$raw" | sed '$d')
+
+            echo "$label:" >&2
+            echo "$response" | jq . >&2
+
+            if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+              echo "❌ Linear API HTTP error: $http_code" >&2
+              exit 1
+            fi
+
+            if [ "$(echo "$response" | jq -r '.errors // [] | length')" -gt 0 ]; then
+              echo "❌ Linear GraphQL errors:" >&2
+              echo "$response" | jq -r '.errors[] | "- \(.message)"' >&2
+              exit 1
+            fi
+
+            printf '%s' "$response"
+          }
+
+          ISSUE_ID="${{ steps.pr.outputs.issue_id }}"
+
+          RESPONSE=$(linear_graphql "$(jq -n \
+            --arg issueId "$ISSUE_ID" \
+            '{
+              query: "
+                query Issue($issueId: String!) {
+                  issue(id: $issueId) {
+                    id
+                    identifier
+                    title
+                    state {
+                      id
+                      name
+                      position
+                    }
+                    team {
+                      id
+                      key
+                      name
+                      states {
+                        nodes {
+                          id
+                          name
+                          type
+                          position
+                        }
+                      }
+                    }
+                  }
+                }
+              ",
+              variables: {
+                issueId: $issueId
+              }
+            }')" "Linear resolve response")
+
+          UUID=$(echo "$RESPONSE" | jq -r '.data.issue.id // empty')
+          TITLE=$(echo "$RESPONSE" | jq -r '.data.issue.title // empty')
+          CURRENT_STATE=$(echo "$RESPONSE" | jq -r '.data.issue.state.name // empty')
+          CURRENT_STATE_POSITION=$(echo "$RESPONSE" | jq -r '.data.issue.state.position // empty')
+          TEAM_KEY=$(echo "$RESPONSE" | jq -r '.data.issue.team.key // empty')
+          TEAM_STATES_JSON=$(echo "$RESPONSE" | jq -c \
+            '[.data.issue.team.states.nodes[] | {name, position}]')
+
+          if [ -z "$UUID" ]; then
+            echo "⚠️ Could not resolve Linear issue UUID for $ISSUE_ID."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          {
+            echo "found=true"
+            echo "uuid=$UUID"
+            echo "issue_title=$TITLE"
+            echo "current_state=$CURRENT_STATE"
+            echo "current_state_position=$CURRENT_STATE_POSITION"
+            echo "team_key=$TEAM_KEY"
+            echo "issue_id=$ISSUE_ID"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "team_states_json<<EOF"
+            echo "$TEAM_STATES_JSON"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "✅ Resolved $ISSUE_ID: $UUID"
+          echo "Current state: $CURRENT_STATE (position $CURRENT_STATE_POSITION)"
+          echo "Team: $TEAM_KEY"
+
+      # ────────────────────────────────────────────────────────────────────────
+      # 4. Decide whether to transition based on current Linear state
+      # ────────────────────────────────────────────────────────────────────────
+      - name: Evaluate transition guard
+        id: guard
+        if: steps.resolve.outputs.found == 'true'
+        shell: bash
+        env:
+          LINEAR_DEV_STATUS: ${{ env.LINEAR_DEV_STATUS }}
+          LINEAR_AUTO_TEST_STATUS: ${{ env.LINEAR_AUTO_TEST_STATUS }}
+        run: |
+          set -euo pipefail
+
+          state_matches() {
+            local actual="$1"
+            local expected="$2"
+            [ "$(echo "$actual" | tr '[:upper:]' '[:lower:]')" = "$(echo "$expected" | tr '[:upper:]' '[:lower:]')" ]
+          }
+
+          DEPLOY_STATE="${{ steps.extract.outputs.state }}"
+          CURRENT_STATE="${{ steps.resolve.outputs.current_state }}"
+          CURRENT_POSITION="${{ steps.resolve.outputs.current_state_position }}"
+          TEAM_STATES='${{ steps.resolve.outputs.team_states_json }}'
+          SHOULD_MOVE="false"
+
+          if [ "$DEPLOY_STATE" = "success" ]; then
+            AUTO_TEST_POSITION=$(echo "$TEAM_STATES" | jq -r \
+              --arg target "$LINEAR_AUTO_TEST_STATUS" \
+              '.[] | select((.name | ascii_downcase) == ($target | ascii_downcase)) | .position' | head -1)
+
+            if [ -z "$AUTO_TEST_POSITION" ]; then
+              echo "Skipping transition: could not resolve workflow position for '$LINEAR_AUTO_TEST_STATUS'."
+            elif [ -z "$CURRENT_POSITION" ]; then
+              echo "Skipping transition: issue is in '$CURRENT_STATE' but workflow position is unknown."
+            elif awk -v cur="$CURRENT_POSITION" -v limit="$AUTO_TEST_POSITION" \
+                 'BEGIN { exit (cur < limit) ? 0 : 1 }'; then
+              SHOULD_MOVE="true"
+              echo "Deploy succeeded: '$CURRENT_STATE' (position $CURRENT_POSITION) is before Auto Test Pending (position $AUTO_TEST_POSITION) — will advance."
+            else
+              echo "Skipping transition: '$CURRENT_STATE' (position $CURRENT_POSITION) is at or after Auto Test Pending (position $AUTO_TEST_POSITION)."
+            fi
+          else
+            if state_matches "$CURRENT_STATE" "$LINEAR_DEV_STATUS" || \
+               state_matches "$CURRENT_STATE" "$LINEAR_AUTO_TEST_STATUS"; then
+              SHOULD_MOVE="true"
+              echo "Deploy state is '$DEPLOY_STATE' and issue is in '$CURRENT_STATE' — will move to Dev."
+            else
+              echo "Skipping transition: issue is in '$CURRENT_STATE' for deploy state '$DEPLOY_STATE'."
+            fi
+          fi
+
+          echo "should_move=$SHOULD_MOVE" >> "$GITHUB_OUTPUT"
+
+      # ────────────────────────────────────────────────────────────────────────
+      # 5. Resolve target Linear workflow state ID
+      # ────────────────────────────────────────────────────────────────────────
+      - name: Resolve Linear workflow state ID
+        id: state
+        if: steps.resolve.outputs.found == 'true' && steps.guard.outputs.should_move == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          linear_graphql() {
+            local body="$1"
+            local label="${2:-Linear GraphQL response}"
+            local http_code response raw
+
+            raw=$(curl -sS -w "\n%{http_code}" -X POST https://api.linear.app/graphql \
+              -H "Authorization: ${{ secrets.LINEAR_API_KEY }}" \
+              -H "Content-Type: application/json" \
+              -d "$body")
+            http_code=$(echo "$raw" | tail -n1)
+            response=$(echo "$raw" | sed '$d')
+
+            echo "$label:" >&2
+            echo "$response" | jq . >&2
+
+            if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+              echo "❌ Linear API HTTP error: $http_code" >&2
+              exit 1
+            fi
+
+            if [ "$(echo "$response" | jq -r '.errors // [] | length')" -gt 0 ]; then
+              echo "❌ Linear GraphQL errors:" >&2
+              echo "$response" | jq -r '.errors[] | "- \(.message)"' >&2
+              exit 1
+            fi
+
+            printf '%s' "$response"
+          }
+
+          ISSUE_ID="${{ steps.pr.outputs.issue_id }}"
+          TARGET_STATUS="${{ steps.extract.outputs.target_status }}"
+
+          RESPONSE=$(linear_graphql "$(jq -n \
+            --arg issueId "$ISSUE_ID" \
+            '{
+              query: "
+                query IssueTeamStates($issueId: String!) {
+                  issue(id: $issueId) {
+                    id
+                    team {
+                      states {
+                        nodes {
+                          id
+                          name
+                          type
+                        }
+                      }
+                    }
+                  }
+                }
+              ",
+              variables: {
+                issueId: $issueId
+              }
+            }')" "Linear workflow states response")
+
+          STATE_ID=$(echo "$RESPONSE" | jq -r \
+            --arg target "$TARGET_STATUS" \
+            '.data.issue.team.states.nodes[]
+             | select((.name | ascii_downcase) == ($target | ascii_downcase))
+             | .id' | head -1)
+
+          if [ -z "$STATE_ID" ]; then
+            echo "❌ Could not find Linear workflow state '$TARGET_STATUS'."
+            echo "Available states:"
+            echo "$RESPONSE" | jq -r '.data.issue.team.states.nodes[] | "- \(.name) (\(.type))"'
+            exit 1
+          fi
+
+          {
+            echo "state_id=$STATE_ID"
+            echo "target_status=$TARGET_STATUS"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "✅ Target Linear state: $TARGET_STATUS ($STATE_ID)"
+
+      # ────────────────────────────────────────────────────────────────────────
+      # 6. Move Linear issue to Dev or Auto Test Pending
+      # ────────────────────────────────────────────────────────────────────────
+      - name: Move Linear issue to target status
+        if: steps.resolve.outputs.found == 'true' && steps.guard.outputs.should_move == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          linear_graphql() {
+            local body="$1"
+            local label="${2:-Linear GraphQL response}"
+            local http_code response raw
+
+            raw=$(curl -sS -w "\n%{http_code}" -X POST https://api.linear.app/graphql \
+              -H "Authorization: ${{ secrets.LINEAR_API_KEY }}" \
+              -H "Content-Type: application/json" \
+              -d "$body")
+            http_code=$(echo "$raw" | tail -n1)
+            response=$(echo "$raw" | sed '$d')
+
+            echo "$label:" >&2
+            echo "$response" | jq . >&2
+
+            if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+              echo "❌ Linear API HTTP error: $http_code" >&2
+              exit 1
+            fi
+
+            if [ "$(echo "$response" | jq -r '.errors // [] | length')" -gt 0 ]; then
+              echo "❌ Linear GraphQL errors:" >&2
+              echo "$response" | jq -r '.errors[] | "- \(.message)"' >&2
+              exit 1
+            fi
+
+            printf '%s' "$response"
+          }
+
+          UUID="${{ steps.resolve.outputs.uuid }}"
+          TARGET_STATUS="${{ steps.state.outputs.target_status }}"
+          STATE_ID="${{ steps.state.outputs.state_id }}"
+
+          MUTATION=$(jq -n \
+            --arg issueId "$UUID" \
+            --arg stateId "$STATE_ID" \
+            '{
+              query: "
+                mutation IssueUpdate($id: String!, $input: IssueUpdateInput!) {
+                  issueUpdate(id: $id, input: $input) {
+                    success
+                    issue {
+                      id
+                      identifier
+                      state {
+                        id
+                        name
+                      }
+                    }
+                  }
+                }
+              ",
+              variables: {
+                id: $issueId,
+                input: {
+                  stateId: $stateId
+                }
+              }
+            }')
+
+          RESPONSE=$(linear_graphql "$MUTATION" "Linear issue update response")
+
+          SUCCESS=$(echo "$RESPONSE" | jq -r '.data.issueUpdate.success // false')
+          NEW_STATE=$(echo "$RESPONSE" | jq -r '.data.issueUpdate.issue.state.name // empty')
+
+          if [ "$SUCCESS" = "true" ]; then
+            echo "✅ Linear issue moved to $NEW_STATE"
+          else
+            echo "❌ Failed to update Linear issue state to $TARGET_STATUS."
+            exit 1
+          fi
+
+      # ────────────────────────────────────────────────────────────────────────
+      # 7. Attach Railway preview URL when success + resolved app URL
+      # ────────────────────────────────────────────────────────────────────────
+      - name: Attach Railway preview URL to Linear issue
+        if: |
+          steps.resolve.outputs.found == 'true' &&
+          steps.guard.outputs.should_move == 'true' &&
+          steps.extract.outputs.should_attach_preview == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          linear_graphql() {
+            local body="$1"
+            local label="${2:-Linear GraphQL response}"
+            local http_code response raw
+
+            raw=$(curl -sS -w "\n%{http_code}" -X POST https://api.linear.app/graphql \
+              -H "Authorization: ${{ secrets.LINEAR_API_KEY }}" \
+              -H "Content-Type: application/json" \
+              -d "$body")
+            http_code=$(echo "$raw" | tail -n1)
+            response=$(echo "$raw" | sed '$d')
+
+            echo "$label:" >&2
+            echo "$response" | jq . >&2
+
+            if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+              echo "❌ Linear API HTTP error: $http_code" >&2
+              exit 1
+            fi
+
+            if [ "$(echo "$response" | jq -r '.errors // [] | length')" -gt 0 ]; then
+              echo "❌ Linear GraphQL errors:" >&2
+              echo "$response" | jq -r '.errors[] | "- \(.message)"' >&2
+              exit 1
+            fi
+
+            printf '%s' "$response"
+          }
+
+          UUID="${{ steps.resolve.outputs.uuid }}"
+          ISSUE_ID="${{ steps.pr.outputs.issue_id }}"
+          TITLE="✅ Railway Preview — $ISSUE_ID"
+          SUBTITLE="${{ steps.extract.outputs.subtitle }}"
+          PREVIEW_URL="${{ steps.pr.outputs.preview_url }}"
+          STATE="${{ steps.extract.outputs.state }}"
+          ENV_NAME="${{ steps.extract.outputs.env_name }}"
+          SHORT_SHA="${{ steps.extract.outputs.short_sha }}"
+          PR_URL="${{ steps.pr.outputs.pr_url }}"
+          REPO="${{ steps.extract.outputs.repo }}"
+          BRANCH="${{ steps.extract.outputs.branch }}"
+
+          if [ -z "$PREVIEW_URL" ]; then
+            echo "⚠️ No Railway app preview URL found. Skipping Linear attachment."
+            exit 0
+          fi
+
+          METADATA=$(jq -n \
+            --arg state "$STATE" \
+            --arg env "$ENV_NAME" \
+            --arg previewUrl "$PREVIEW_URL" \
+            --arg sha "$SHORT_SHA" \
+            --arg prUrl "$PR_URL" \
+            --arg repo "$REPO" \
+            --arg branch "$BRANCH" \
+            '{
+              deployState: $state,
+              environment: $env,
+              previewUrl: $previewUrl,
+              shortSha: $sha,
+              pullRequestUrl: $prUrl,
+              repository: $repo,
+              branch: $branch
+            }')
+
+          MUTATION=$(jq -n \
+            --arg issueId "$UUID" \
+            --arg title "$TITLE" \
+            --arg subtitle "$SUBTITLE" \
+            --arg url "$PREVIEW_URL" \
+            --argjson meta "$METADATA" \
+            '{
+              query: "
+                mutation CreateAttachment($input: AttachmentCreateInput!) {
+                  attachmentCreate(input: $input) {
+                    success
+                    attachment {
+                      id
+                      title
+                      subtitle
+                      url
+                    }
+                  }
+                }
+              ",
+              variables: {
+                input: {
+                  issueId: $issueId,
+                  title: $title,
+                  subtitle: $subtitle,
+                  url: $url,
+                  metadata: $meta
+                }
+              }
+            }')
+
+          RESPONSE=$(linear_graphql "$MUTATION" "Linear attachment response")
+
+          SUCCESS=$(echo "$RESPONSE" | jq -r '.data.attachmentCreate.success // false')
+          ATTACH_ID=$(echo "$RESPONSE" | jq -r '.data.attachmentCreate.attachment.id // empty')
+
+          if [ "$SUCCESS" = "true" ]; then
+            echo "✅ Railway preview attached to $ISSUE_ID"
+            echo "Attachment ID: $ATTACH_ID"
+            echo "Preview URL: $PREVIEW_URL"
+          else
+            echo "❌ Failed to attach Railway preview URL."
+            exit 1
+          fi
+
+      # ────────────────────────────────────────────────────────────────────────
+      # 8. Comment on Linear issue only when Railway deployment fails
+      # ────────────────────────────────────────────────────────────────────────
+      - name: Comment on Linear issue when deployment fails
+        if: |
+          steps.resolve.outputs.found == 'true' &&
+          steps.guard.outputs.should_move == 'true' &&
+          (github.event.deployment_status.state == 'failure' ||
+           github.event.deployment_status.state == 'error')
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          linear_graphql() {
+            local body="$1"
+            local label="${2:-Linear GraphQL response}"
+            local http_code response raw
+
+            raw=$(curl -sS -w "\n%{http_code}" -X POST https://api.linear.app/graphql \
+              -H "Authorization: ${{ secrets.LINEAR_API_KEY }}" \
+              -H "Content-Type: application/json" \
+              -d "$body")
+            http_code=$(echo "$raw" | tail -n1)
+            response=$(echo "$raw" | sed '$d')
+
+            echo "$label:" >&2
+            echo "$response" | jq . >&2
+
+            if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+              echo "❌ Linear API HTTP error: $http_code" >&2
+              exit 1
+            fi
+
+            if [ "$(echo "$response" | jq -r '.errors // [] | length')" -gt 0 ]; then
+              echo "❌ Linear GraphQL errors:" >&2
+              echo "$response" | jq -r '.errors[] | "- \(.message)"' >&2
+              exit 1
+            fi
+
+            printf '%s' "$response"
+          }
+
+          UUID="${{ steps.resolve.outputs.uuid }}"
+          ISSUE_ID="${{ steps.pr.outputs.issue_id }}"
+          LOG_URL="${{ steps.extract.outputs.log_url }}"
+          ENV_NAME="${{ steps.extract.outputs.env_name }}"
+          SHORT_SHA="${{ steps.extract.outputs.short_sha }}"
+          ACTOR="${{ github.actor }}"
+          TARGET_STATUS="${{ steps.extract.outputs.target_status }}"
+
+          if [ -n "$LOG_URL" ]; then
+            BODY="❌ **Railway deployment failed** on \`$ENV_NAME\` at commit \`$SHORT_SHA\`, triggered by @$ACTOR.\\n\\nMoved issue back to **$TARGET_STATUS**.\\n\\n[View Railway logs]($LOG_URL)"
+          else
+            BODY="❌ **Railway deployment failed** on \`$ENV_NAME\` at commit \`$SHORT_SHA\`, triggered by @$ACTOR.\\n\\nMoved issue back to **$TARGET_STATUS**."
+          fi
+
+          MUTATION=$(jq -n \
+            --arg issueId "$UUID" \
+            --arg body "$BODY" \
+            '{
+              query: "
+                mutation CreateComment($input: CommentCreateInput!) {
+                  commentCreate(input: $input) {
+                    success
+                    comment {
+                      id
+                      url
+                    }
+                  }
+                }
+              ",
+              variables: {
+                input: {
+                  issueId: $issueId,
+                  body: $body
+                }
+              }
+            }')
+
+          RESPONSE=$(linear_graphql "$MUTATION" "Linear failure comment response")
+
+          SUCCESS=$(echo "$RESPONSE" | jq -r '.data.commentCreate.success // false')
+
+          if [ "$SUCCESS" = "true" ]; then
+            echo "✅ Failure comment posted on $ISSUE_ID"
+          else
+            echo "⚠️ Could not post failure comment."
+          fi

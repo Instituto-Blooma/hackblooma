@@ -1,0 +1,89 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "pedantic": "off",
+    "style": "off",
+    "restriction": "off"
+  },
+  "plugins": ["react", "typescript", "unicorn", "import"],
+  "rules": {
+    "no-unused-vars": "error",
+    "no-console": "warn",
+    "eqeqeq": "error",
+    "no-debugger": "error",
+    "no-duplicate-imports": "error",
+    "prefer-const": "error",
+
+    "react/jsx-no-undef": "error",
+    "react/jsx-key": "error",
+    "react/no-direct-mutation-state": "error",
+    "react/jsx-no-duplicate-props": "error",
+    "react/no-unescaped-entities": "off",
+    "react/no-unknown-property": "error",
+    "react/no-children-prop": "warn",
+    "react/self-closing-comp": "warn",
+    "react/react-in-jsx-scope": "off",
+
+    "typescript/no-explicit-any": "warn",
+    "typescript/no-unused-vars": "error",
+    "typescript/no-non-null-assertion": "warn",
+    "typescript/prefer-as-const": "warn",
+
+    "unicorn/no-null": "off",
+    "unicorn/filename-case": "off",
+
+    "import/no-duplicates": "error",
+    "import/first": "warn",
+    "import/newline-after-import": "warn"
+  },
+  "globals": {
+    "React": true,
+    "JSX": true
+  },
+  "ignorePatterns": [
+    "dist/**",
+    "build/**",
+    "node_modules/**",
+    ".convex/**",
+    "convex/_generated/**",
+    "app/routeTree.gen.ts",
+    "client/src/routeTree.gen.ts",
+    "*.min.js",
+    "*.bundle.js"
+  ],
+  "overrides": [
+    {
+      "files": ["**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}"],
+      "rules": {
+        "no-console": "off"
+      }
+    },
+    {
+      "files": ["convex/**/*.{ts,tsx}"],
+      "rules": {
+        "no-console": "off"
+      }
+    },
+    {
+      "files": ["script/**/*.{js,mjs}"],
+      "rules": {
+        "no-console": "off"
+      }
+    },
+    {
+      "files": ["client/src/main.tsx"],
+      "rules": {
+        "import/no-unassigned-import": "off"
+      }
+    },
+    {
+      "files": ["cypress/**/*.{ts,tsx}"],
+      "rules": {
+        "import/no-unassigned-import": "off",
+        "unicorn/require-module-specifiers": "off"
+      }
+    }
+  ]
+}

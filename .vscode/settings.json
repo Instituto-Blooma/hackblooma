@@ -1,0 +1,55 @@
+{
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.oxc": "always"
+  },
+  "js/ts.experimental.useTsgo": true,
+  "oxc.configPath": "./.oxlintrc.json",
+  "oxc.fmt.configPath": "./.oxfmtrc.json",
+  "oxc.tsConfigPath": "./tsconfig.json",
+  "oxc.lint.run": "onSave",
+  "typescript.preferences.importModuleSpecifier": "relative",
+
+  "[javascript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/.convex": true,
+    "**/convex/_generated": true,
+    "**/app/routeTree.gen.ts": true
+  },
+
+  "files.exclude": {
+    "**/.git": true,
+    "**/node_modules": true
+  },
+
+  "tailwindCSS.experimental.classRegex": [
+    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+    ["cn\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+  ],
+  "typescript.native-preview.tsdk": "node_modules/@typescript/native-preview"
+}

@@ -1,0 +1,71 @@
+# Dependencies
+node_modules/
+
+# Prefer pnpm - avoid accidental npm lockfiles from local installs
+package-lock.json
+
+# Build outputs
+dist/
+build/
+.output/
+.pnpm-store/
+.pnpmstore/
+.tanstack/
+
+# Convex generated files
+.convex/
+# convex/_generated/ is tracked to allow the app to run before Convex is configured
+
+# TanStack Start generated files
+app/routeTree.gen.ts
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+.setup-done
+.setup-lock/
+.e2e-stack-children.pids
+.e2e-stack-logs/
+
+# IDE and editor
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing
+coverage/
+.nyc_output/
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+cypress/fixtures/e2e-context.json
+
+# Misc
+.cache/
+.temp/
+.tmp/
+server/public
+vite.config.ts.*
+*.tar.gz
+
+.convex-tmp/
+.node-runtime/

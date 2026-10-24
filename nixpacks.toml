@@ -1,0 +1,14 @@
+[variables]
+NIXPACKS_NODE_VERSION = "22.22.2"
+CYPRESS_INSTALL_BINARY = "0"
+
+[phases.install]
+cmds = [
+  "rm -rf .node-runtime && mkdir -p .node-runtime && arch=$(uname -m); case \"$arch\" in x86_64) node_arch=x64 ;; aarch64|arm64) node_arch=arm64 ;; *) echo \"unsupported node arch: $arch\" >&2; exit 1 ;; esac; ver=22.22.2; curl -fsSL \"https://nodejs.org/dist/v${ver}/node-v${ver}-linux-${node_arch}.tar.xz\" | tar -xJ -C .node-runtime --strip-components=1",
+  "unset NPM_CONFIG_PRODUCTION npm_config_production; npm install -g corepack@latest",
+  "corepack enable",
+  "corepack prepare pnpm@11.1.1 --activate",
+  "unset NPM_CONFIG_PRODUCTION npm_config_production; export PATH=\"$PWD/.node-runtime/bin:$PATH\" && pnpm install --frozen-lockfile",
+  "mkdir -p \"$HOME/.cache/convex/tmp\"",
+  "unset NPM_CONFIG_PRODUCTION npm_config_production; export PATH=\"$PWD/.node-runtime/bin:$PATH\" && CONVEX_AGENT_MODE=anonymous CI=true CONVEX_TMPDIR=\"$HOME/.cache/convex/tmp\" NODE_OPTIONS=--dns-result-order=ipv4first pnpm run prefetch:convex:local",
+]

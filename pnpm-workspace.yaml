@@ -1,0 +1,21 @@
+packages:
+  - '.'
+
+# Supply chain hardening (pnpm v11)
+allowBuilds:
+  esbuild: true
+  bufferutil: true
+  '@parcel/watcher': true
+  protobufjs: true
+  cypress: true
+  core-js: false
+  core-js-pure: false
+
+# New versions must age before install (minutes); 4320 = 3 days
+minimumReleaseAge: 4320
+# Packages excluded from the release-age policy (installed immediately)
+minimumReleaseAgeExclude:
+  - '@talentum-ventures/convex-presence'
+blockExoticSubdeps: true
+trustPolicy: no-downgrade
+trustPolicyIgnoreAfter: 4320

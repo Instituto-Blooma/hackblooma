@@ -1,0 +1,16 @@
+{
+  "printWidth": 100,
+  "tabWidth": 2,
+  "semi": true,
+  "singleQuote": true,
+  "trailingComma": "es5",
+  "sortPackageJson": false,
+  "ignorePatterns": [
+    "dist/**",
+    "build/**",
+    "node_modules/**",
+    ".convex/**",
+    "convex/_generated/**",
+    "client/src/routeTree.gen.ts"
+  ]
+}

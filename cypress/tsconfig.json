@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["cypress"],
+    "moduleResolution": "bundler",
+    "isolatedModules": true
+  },
+  "include": ["**/*.ts"]
+}

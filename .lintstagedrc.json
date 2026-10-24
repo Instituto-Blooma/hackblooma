@@ -1,0 +1,7 @@
+{
+  "*.{ts,tsx,js,jsx,mjs,cjs,mts,cts}": [
+    "oxfmt -c .oxfmtrc.json --write",
+    "oxlint --tsconfig tsconfig.json --fix"
+  ],
+  "*.{json,jsonc,md,yml,yaml,css,html}": ["oxfmt -c .oxfmtrc.json --write"]
+}

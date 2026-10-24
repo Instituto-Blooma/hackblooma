@@ -1,0 +1,24 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "pnpm run build"
+
+[deploy]
+preDeployCommand = "pnpm run deploy:convex"
+startCommand = "node script/run.mjs railway serve"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+# environments.local and environments.pr must stay in sync (Railway has no TOML alias).
+[environments.local.build]
+buildCommand = "node script/run.mjs railway build"
+
+[environments.local.deploy]
+preDeployCommand = "node script/run.mjs railway predeploy"
+startCommand = "node script/run.mjs railway start"
+
+[environments.pr.build]
+buildCommand = "node script/run.mjs railway build"
+
+[environments.pr.deploy]
+preDeployCommand = "node script/run.mjs railway predeploy"
+startCommand = "node script/run.mjs railway start"

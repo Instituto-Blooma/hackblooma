@@ -1,0 +1,391 @@
+name: Sync Linear on PR Merge
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  # Change these if your Linear workflow state names are different.
+  LINEAR_STAGING_STATUS: Staging
+  LINEAR_PROD_STATUS: Prod
+  LINEAR_TEAM_KEY: ${{ vars.LINEAR_TEAM_KEY || 'TAL' }}
+
+jobs:
+  move-to-staging:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Extract Linear issue keys from merged PR
+        id: extract
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const searchText = [
+              pr.title || "",
+              pr.body || "",
+              pr.head?.ref || "",
+            ].join("\n");
+
+            const matches = searchText.match(/\b[A-Z]+-\d+\b/gi) || [];
+            const uniqueKeys = [...new Set(matches.map((key) => key.toUpperCase()))];
+
+            if (uniqueKeys.length === 0) {
+              core.warning("No Linear issue keys found in merged PR.");
+              core.setOutput("found", "false");
+              core.setOutput("issue_keys", "[]");
+              return;
+            }
+
+            core.info(`Linear issue keys: ${uniqueKeys.join(", ")}`);
+            core.setOutput("found", "true");
+            core.setOutput("issue_keys", JSON.stringify(uniqueKeys));
+
+      - name: Move referenced issues to Staging
+        if: steps.extract.outputs.found == 'true'
+        shell: bash
+        env:
+          LINEAR_STAGING_STATUS: ${{ env.LINEAR_STAGING_STATUS }}
+        run: |
+          set -euo pipefail
+
+          linear_graphql() {
+            local body="$1"
+            local label="${2:-Linear GraphQL response}"
+            local http_code response raw
+
+            raw=$(curl -sS -w "\n%{http_code}" -X POST https://api.linear.app/graphql \
+              -H "Authorization: ${{ secrets.LINEAR_API_KEY }}" \
+              -H "Content-Type: application/json" \
+              -d "$body")
+            http_code=$(echo "$raw" | tail -n1)
+            response=$(echo "$raw" | sed '$d')
+
+            echo "$label:" >&2
+            echo "$response" | jq . >&2
+
+            if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+              echo "❌ Linear API HTTP error: $http_code" >&2
+              exit 1
+            fi
+
+            if [ "$(echo "$response" | jq -r '.errors // [] | length')" -gt 0 ]; then
+              echo "❌ Linear GraphQL errors:" >&2
+              echo "$response" | jq -r '.errors[] | "- \(.message)"' >&2
+              exit 1
+            fi
+
+            printf '%s' "$response"
+          }
+
+          resolve_state_id() {
+            local issue_key="$1"
+            local target_status="$2"
+            local response state_id
+
+            response=$(linear_graphql "$(jq -n \
+              --arg issueId "$issue_key" \
+              '{
+                query: "
+                  query IssueTeamStates($issueId: String!) {
+                    issue(id: $issueId) {
+                      id
+                      identifier
+                      team {
+                        states {
+                          nodes {
+                            id
+                            name
+                          }
+                        }
+                      }
+                    }
+                  }
+                ",
+                variables: {
+                  issueId: $issueId
+                }
+              }')" "Linear workflow states for $issue_key")
+
+            state_id=$(echo "$response" | jq -r \
+              --arg target "$target_status" \
+              '.data.issue.team.states.nodes[]
+               | select((.name | ascii_downcase) == ($target | ascii_downcase))
+               | .id' | head -1)
+
+            if [ -z "$state_id" ]; then
+              echo "❌ Could not find Linear workflow state '$target_status' for $issue_key." >&2
+              echo "$response" | jq -r '.data.issue.team.states.nodes[] | "- \(.name)"' >&2
+              return 1
+            fi
+
+            printf '%s' "$state_id"
+          }
+
+          move_issue() {
+            local issue_key="$1"
+            local target_status="$2"
+            local state_id response success new_state uuid
+
+            response=$(linear_graphql "$(jq -n \
+              --arg issueId "$issue_key" \
+              '{
+                query: "
+                  query Issue($issueId: String!) {
+                    issue(id: $issueId) {
+                      id
+                      identifier
+                      state {
+                        name
+                      }
+                    }
+                  }
+                ",
+                variables: {
+                  issueId: $issueId
+                }
+              }')" "Linear resolve $issue_key")
+
+            uuid=$(echo "$response" | jq -r '.data.issue.id // empty')
+            if [ -z "$uuid" ]; then
+              echo "⚠️ Could not resolve Linear issue $issue_key. Skipping." >&2
+              return 0
+            fi
+
+            state_id=$(resolve_state_id "$issue_key" "$target_status")
+
+            response=$(linear_graphql "$(jq -n \
+              --arg issueId "$uuid" \
+              --arg stateId "$state_id" \
+              '{
+                query: "
+                  mutation IssueUpdate($id: String!, $input: IssueUpdateInput!) {
+                    issueUpdate(id: $id, input: $input) {
+                      success
+                      issue {
+                        identifier
+                        state {
+                          name
+                        }
+                      }
+                    }
+                  }
+                ",
+                variables: {
+                  id: $issueId,
+                  input: {
+                    stateId: $stateId
+                  }
+                }
+              }')" "Linear issue update for $issue_key")
+
+            success=$(echo "$response" | jq -r '.data.issueUpdate.success // false')
+            new_state=$(echo "$response" | jq -r '.data.issueUpdate.issue.state.name // empty')
+
+            if [ "$success" = "true" ]; then
+              echo "✅ $issue_key moved to $new_state"
+            else
+              echo "❌ Failed to move $issue_key to $target_status." >&2
+              return 1
+            fi
+          }
+
+          ISSUE_KEYS='${{ steps.extract.outputs.issue_keys }}'
+          mapfile -t KEYS < <(echo "$ISSUE_KEYS" | jq -r '.[]')
+
+          for issue_key in "${KEYS[@]}"; do
+            move_issue "$issue_key" "$LINEAR_STAGING_STATUS"
+          done
+
+  move-staging-to-prod:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'prod'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Move all Staging issues to Prod
+        shell: bash
+        env:
+          LINEAR_STAGING_STATUS: ${{ env.LINEAR_STAGING_STATUS }}
+          LINEAR_PROD_STATUS: ${{ env.LINEAR_PROD_STATUS }}
+          LINEAR_TEAM_KEY: ${{ env.LINEAR_TEAM_KEY }}
+        run: |
+          set -euo pipefail
+
+          linear_graphql() {
+            local body="$1"
+            local label="${2:-Linear GraphQL response}"
+            local http_code response raw
+
+            raw=$(curl -sS -w "\n%{http_code}" -X POST https://api.linear.app/graphql \
+              -H "Authorization: ${{ secrets.LINEAR_API_KEY }}" \
+              -H "Content-Type: application/json" \
+              -d "$body")
+            http_code=$(echo "$raw" | tail -n1)
+            response=$(echo "$raw" | sed '$d')
+
+            echo "$label:" >&2
+            echo "$response" | jq . >&2
+
+            if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+              echo "❌ Linear API HTTP error: $http_code" >&2
+              exit 1
+            fi
+
+            if [ "$(echo "$response" | jq -r '.errors // [] | length')" -gt 0 ]; then
+              echo "❌ Linear GraphQL errors:" >&2
+              echo "$response" | jq -r '.errors[] | "- \(.message)"' >&2
+              exit 1
+            fi
+
+            printf '%s' "$response"
+          }
+
+          # Resolve team UUID and Prod state ID once.
+          TEAM_RESPONSE=$(linear_graphql "$(jq -n \
+            --arg teamKey "$LINEAR_TEAM_KEY" \
+            '{
+              query: "
+                query TeamStates($teamKey: String!) {
+                  teams(filter: { key: { eq: $teamKey } }) {
+                    nodes {
+                      id
+                      key
+                      states {
+                        nodes {
+                          id
+                          name
+                        }
+                      }
+                    }
+                  }
+                }
+              ",
+              variables: {
+                teamKey: $teamKey
+              }
+            }')" "Linear team states response")
+
+          TEAM_ID=$(echo "$TEAM_RESPONSE" | jq -r '.data.teams.nodes[0].id // empty')
+          PROD_STATE_ID=$(echo "$TEAM_RESPONSE" | jq -r \
+            --arg target "$LINEAR_PROD_STATUS" \
+            '.data.teams.nodes[0].states.nodes[]
+             | select((.name | ascii_downcase) == ($target | ascii_downcase))
+             | .id' | head -1)
+
+          if [ -z "$TEAM_ID" ]; then
+            echo "❌ Could not find Linear team with key '$LINEAR_TEAM_KEY'."
+            exit 1
+          fi
+
+          if [ -z "$PROD_STATE_ID" ]; then
+            echo "❌ Could not find Linear workflow state '$LINEAR_PROD_STATUS'."
+            echo "$TEAM_RESPONSE" | jq -r '.data.teams.nodes[0].states.nodes[] | "- \(.name)"'
+            exit 1
+          fi
+
+          echo "✅ Team $LINEAR_TEAM_KEY ($TEAM_ID), Prod state: $PROD_STATE_ID"
+
+          AFTER=""
+          MOVED=0
+
+          while true; do
+            QUERY=$(jq -n \
+              --arg teamId "$TEAM_ID" \
+              --arg stagingStatus "$LINEAR_STAGING_STATUS" \
+              --arg after "$AFTER" \
+              '{
+                query: "
+                  query StagingIssues($teamId: ID!, $stagingStatus: String!, $after: String) {
+                    issues(
+                      filter: {
+                        team: { id: { eq: $teamId } }
+                        state: { name: { eq: $stagingStatus } }
+                      }
+                      after: $after
+                      first: 50
+                    ) {
+                      nodes {
+                        id
+                        identifier
+                      }
+                      pageInfo {
+                        hasNextPage
+                        endCursor
+                      }
+                    }
+                  }
+                ",
+                variables: {
+                  teamId: $teamId,
+                  stagingStatus: $stagingStatus,
+                  after: ($after | if . == "" then null else . end)
+                }
+              }')
+
+            RESPONSE=$(linear_graphql "$QUERY" "Linear staging issues page")
+
+            mapfile -t ISSUE_IDS < <(echo "$RESPONSE" | jq -r '.data.issues.nodes[].id')
+            mapfile -t ISSUE_KEYS < <(echo "$RESPONSE" | jq -r '.data.issues.nodes[].identifier')
+
+            if [ "${#ISSUE_IDS[@]}" -eq 0 ] || [ -z "${ISSUE_IDS[0]:-}" ]; then
+              if [ "$MOVED" -eq 0 ]; then
+                echo "ℹ️ No issues in Staging for team $LINEAR_TEAM_KEY."
+              fi
+              break
+            fi
+
+            for i in "${!ISSUE_IDS[@]}"; do
+              issue_uuid="${ISSUE_IDS[$i]}"
+              issue_key="${ISSUE_KEYS[$i]}"
+
+              UPDATE_RESPONSE=$(linear_graphql "$(jq -n \
+                --arg issueId "$issue_uuid" \
+                --arg stateId "$PROD_STATE_ID" \
+                '{
+                  query: "
+                    mutation IssueUpdate($id: String!, $input: IssueUpdateInput!) {
+                      issueUpdate(id: $id, input: $input) {
+                        success
+                        issue {
+                          identifier
+                          state {
+                            name
+                          }
+                        }
+                      }
+                    }
+                  ",
+                  variables: {
+                    id: $issueId,
+                    input: {
+                      stateId: $stateId
+                    }
+                  }
+                }')" "Linear issue update for $issue_key")
+
+              success=$(echo "$UPDATE_RESPONSE" | jq -r '.data.issueUpdate.success // false')
+              new_state=$(echo "$UPDATE_RESPONSE" | jq -r '.data.issueUpdate.issue.state.name // empty')
+
+              if [ "$success" = "true" ]; then
+                echo "✅ $issue_key moved to $new_state"
+                MOVED=$((MOVED + 1))
+              else
+                echo "❌ Failed to move $issue_key to $LINEAR_PROD_STATUS." >&2
+                exit 1
+              fi
+            done
+
+            HAS_NEXT=$(echo "$RESPONSE" | jq -r '.data.issues.pageInfo.hasNextPage')
+            if [ "$HAS_NEXT" != "true" ]; then
+              break
+            fi
+
+            AFTER=$(echo "$RESPONSE" | jq -r '.data.issues.pageInfo.endCursor')
+          done
+
+          echo "✅ Moved $MOVED issue(s) from Staging to Prod."
