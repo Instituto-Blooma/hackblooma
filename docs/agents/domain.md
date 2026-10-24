@@ -7,7 +7,7 @@ How engineering skills should consume this repo's domain documentation.
 - **[AGENTS.md](../../AGENTS.md)** — inline domain vocabulary for the template
 - **[docs/adr/](../adr/)** — read ADRs that touch the area you're about to work in
 
-Forks may run `/grill-with-docs` to create a root `CONTEXT.md` glossary with product-specific language.
+Forks may run `/grill-with-docs` to create a root `CONTEXT.md` glossary with product-specific language. On Hackblooma, every interview question follows [audience.md](./audience.md).
 
 ## File structure
 
@@ -33,4 +33,4 @@ If your output contradicts an existing ADR, surface it explicitly rather than si
 
 ## Extending the glossary
 
-Use the `/grill-with-docs` skill. It can create or extend `CONTEXT.md` one term at a time and offers ADRs only for hard-to-reverse trade-offs. See [.agents/skills/grill-with-docs/CONTEXT-FORMAT.md](../../.agents/skills/grill-with-docs/CONTEXT-FORMAT.md).
+Use the `/grill-with-docs` skill. It can create or extend `CONTEXT.md` one term at a time and offers ADRs only for hard-to-reverse trade-offs. See [.agents/skills/grill-with-docs/CONTEXT-FORMAT.md](../../.agents/skills/grill-with-docs/CONTEXT-FORMAT.md) and [audience.md](./audience.md). Write glossary definitions in everyday language.

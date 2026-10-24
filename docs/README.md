@@ -19,6 +19,7 @@ Guides for forked B2B startups using this template. Domain vocabulary in [AGENTS
 - [AGENTS.md](../AGENTS.md) — orientation and agent-skill wiring
 - [frontend.md](./frontend.md) — shadcn/ui, forms, and UI conventions (bridge for the shadcn skill)
 - [updating-downstream.md](./updating-downstream.md) — port template changes; skill: [update-downstream](../.agents/skills/update-downstream/SKILL.md)
+- [agents/audience.md](./agents/audience.md) — who the builders are and how to ask them questions
 - [agents/domain.md](./agents/domain.md) — how to read AGENTS.md vocabulary and ADRs
 - [agents/issue-tracker.md](./agents/issue-tracker.md) — GitHub Issues conventions
 - [agents/triage-labels.md](./agents/triage-labels.md) — triage label vocabulary

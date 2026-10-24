@@ -1,15 +1,24 @@
 ---
 name: grill-with-docs
-description: Grilling session that challenges your plan against the existing domain model, sharpens terminology, and updates documentation (CONTEXT.md, ADRs) inline as decisions crystallise. Use when user wants to stress-test a plan against their project's language and documented decisions.
+description: Grilling session that challenges your plan against the existing domain model, sharpens terminology, and updates documentation (CONTEXT.md, ADRs) inline as decisions crystallise. Use when user wants to stress-test a plan against their project's language and documented decisions. On Hackblooma, ask in everyday language with exactly 3 options per question; never ask how to implement.
 ---
 
 <what-to-do>
 
-Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.
+Read [docs/agents/audience.md](../../../docs/agents/audience.md) before the first question. Hackblooma’s main builders are high-performing high school girls without a software-engineering background.
+
+Interview me about the product, people, and words we should use until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one.
 
 Ask the questions one at a time, waiting for feedback on each question before continuing.
 
-If a question can be answered by exploring the codebase, explore the codebase instead.
+Every question must:
+
+- Use everyday language (no jargon, or explain a term in the same sentence)
+- Be about what people should experience — never how to implement it
+- Offer exactly 3 reply options (A / B / C)
+- Include your recommended option and a one- or two-sentence why
+
+Do the technical work yourself. Do not ask about databases, APIs, auth mechanics, schemas, or similar. If a fact can be answered by exploring the codebase, explore the codebase instead.
 
 </what-to-do>
 
@@ -52,6 +61,8 @@ If a `CONTEXT-MAP.md` exists at the root, the repo has multiple contexts. The ma
 Create files lazily — only when you have something to write. If no `CONTEXT.md` exists, create one when the first term is resolved. If no `docs/adr/` exists, create it when the first ADR is needed.
 
 ## During the session
+
+Follow [docs/agents/audience.md](../../../docs/agents/audience.md) for every question: everyday language, exactly 3 options, recommended pick, no implementation questions.
 
 ### Challenge against the glossary
 

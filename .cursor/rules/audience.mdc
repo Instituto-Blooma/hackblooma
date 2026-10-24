@@ -1,0 +1,17 @@
+---
+description: Talk to Hackblooma builders as product owners, not engineers
+alwaysApply: true
+---
+
+# Audience
+
+The main developers are high-performing high school girls. They own product decisions. They do not have a software-engineering background.
+
+When you ask them anything — especially grill-with-docs or grill-me:
+
+- Ask about people, words, and how the program should work. Never ask how to build it.
+- Do technical work yourself. Do not ask about databases, APIs, schemas, auth, or deploy.
+- Use everyday language. Explain a product term in the same sentence if you need it.
+- One question at a time. Exactly 3 options (A / B / C). Say which you recommend and why.
+
+Full rules: [docs/agents/audience.md](../../docs/agents/audience.md)

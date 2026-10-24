@@ -30,7 +30,8 @@ _Avoid_: Client, buyer, account
 - **Show relationships.** Use bold term names and express cardinality where obvious.
 - **Only include terms specific to this project's context.** General programming concepts (timeouts, error types, utility patterns) don't belong even if the project uses them extensively. Before adding a term, ask: is this a concept unique to this context, or a general programming concept? Only the former belongs.
 - **Group terms under subheadings** when natural clusters emerge. If all terms belong to a single cohesive area, a flat list is fine.
-- **Write an example dialogue.** A conversation between a dev and a domain expert that demonstrates how the terms interact naturally and clarifies boundaries between related concepts.
+- **Write an example dialogue.** A conversation that demonstrates how the terms interact naturally and clarifies boundaries between related concepts. On Hackblooma, write it in everyday language a high-school builder would use — not engineer-to-expert jargon.
+- **Everyday language.** Definitions should make sense to someone who has never written code. No implementation details.
 
 ## Single vs multi-context repos
 
