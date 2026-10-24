@@ -84,7 +84,7 @@ describe('resolveAppBranding', () => {
       RAILWAY_ENVIRONMENT_NAME: 'production',
     });
 
-    expect(getAppTitlePrefix(branding)).toBe('SaaS Template');
+    expect(getAppTitlePrefix(branding)).toBe('Hackblooma');
     expect(getFaviconHref(branding)).toBe('/favicon.png');
   });
 });
