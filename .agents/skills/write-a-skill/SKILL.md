@@ -17,6 +17,7 @@ description: Create new agent skills with proper structure, progressive disclosu
    - SKILL.md with concise instructions
    - Additional reference files if content exceeds 500 lines
    - Utility scripts if deterministic operations needed
+   - A Claude Code mirror: `ln -s ../../.agents/skills/<skill-name> .claude/skills/<skill-name>`
 
 3. **Review with user** - present draft and ask:
    - Does this cover your use cases?

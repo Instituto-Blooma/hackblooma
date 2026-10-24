@@ -13,7 +13,7 @@ Built on Vite, React, TypeScript, and Convex — with local dev, GitHub CI, and 
 - Reference org-scoped feature: todos with ABAC pattern
 - Platform admin UI at `/admin`; org settings at `/settings/*`
 - Cypress e2e suite with personas and multi-organization fixtures
-- Agent skills in `.agents/skills/`
+- Agent skills in `.agents/skills/` (Claude Code: `.claude/skills/`)
 - Demo mode before Convex is configured; Tailwind + shadcn/ui; lint/format/typecheck
 
 ## Quick Start (Local)

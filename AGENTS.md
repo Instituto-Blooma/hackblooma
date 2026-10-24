@@ -96,7 +96,7 @@ Read [docs/adr/](./docs/adr/) before changing tenancy, onboarding, or platform a
 | [docs/adr/](./docs/adr/)                                     | Architectural decisions                                            |
 | [cypress/README.md](./cypress/README.md)                     | E2E test harness                                                   |
 
-Bundled agent skills live in [`.agents/skills/`](./.agents/skills/) (grill-with-docs, tdd, triage, diagnose, shadcn, etc.).
+Bundled agent skills live in [`.agents/skills/`](./.agents/skills/) (grill-with-docs, tdd, triage, diagnose, shadcn, etc.). Claude Code loads the same skills from [`.claude/skills/`](./.claude/skills/) (per-skill symlinks).
 
 ## Conventions for agents
 

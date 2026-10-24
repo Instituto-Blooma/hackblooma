@@ -29,6 +29,9 @@ app/routeTree.gen.ts
 .e2e-stack-children.pids
 .e2e-stack-logs/
 
+# Claude Code may write internals next to project skills
+.claude/skills/.system/
+
 # IDE and editor
 .vscode/*
 !.vscode/settings.json
