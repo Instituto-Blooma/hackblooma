@@ -161,6 +161,14 @@ async function configureAuthEnv(tag) {
   await setConvexEnvVar('RESEND_BASE_URL', resendEmulateUrl);
   await setConvexEnvVar('RESEND_API_KEY', 're_emulate_test_key');
 
+  if (!convexEnvHas('VAPID_PUBLIC_KEY') || !convexEnvHas('VAPID_PRIVATE_KEY')) {
+    log(tag, 'Generating VAPID keys for notificações (Web Push)...');
+    const { default: webpush } = await import('web-push');
+    const vapid = webpush.generateVAPIDKeys();
+    await setConvexEnvVar('VAPID_PUBLIC_KEY', vapid.publicKey);
+    await setConvexEnvVar('VAPID_PRIVATE_KEY', vapid.privateKey);
+  }
+
   if (readEnvLocalVar('E2E_AUTH_SECRET')) {
     log(tag, 'Removing E2E_AUTH_SECRET from .env.local...');
     removeEnvLocalVar('E2E_AUTH_SECRET');

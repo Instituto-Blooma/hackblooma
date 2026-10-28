@@ -14,14 +14,23 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as DevInboxRouteImport } from './routes/dev/inbox'
 import { Route as AcceptInvitationIdRouteImport } from './routes/accept-invitation.$id'
+import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
+import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated/historico'
+import { Route as AuthenticatedCalendarioRouteImport } from './routes/_authenticated/calendario'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedOlimpiadasIndexRouteImport } from './routes/_authenticated/olimpiadas/index'
+import { Route as AuthenticatedEquipeIndexRouteImport } from './routes/_authenticated/equipe/index'
 import { Route as AuthenticatedSettingsTeamsRouteImport } from './routes/_authenticated/settings/teams'
 import { Route as AuthenticatedSettingsOrgRouteImport } from './routes/_authenticated/settings/org'
 import { Route as AuthenticatedSettingsMembersRouteImport } from './routes/_authenticated/settings/members'
+import { Route as AuthenticatedOlimpiadasOlympiadIdRouteImport } from './routes/_authenticated/olimpiadas/$olympiadId'
+import { Route as AuthenticatedEquipeListaRouteImport } from './routes/_authenticated/equipe/lista'
+import { Route as AuthenticatedDevTodosRouteImport } from './routes/_authenticated/dev/todos'
 import { Route as AuthenticatedDevTenantsRouteImport } from './routes/_authenticated/dev/tenants'
 import { Route as AuthenticatedDevRichtextCollabRouteImport } from './routes/_authenticated/dev/richtext-collab'
 import { Route as AuthenticatedDevPermissionsRouteImport } from './routes/_authenticated/dev/permissions'
 import { Route as AuthenticatedDevFormRouteImport } from './routes/_authenticated/dev/form'
+import { Route as AuthenticatedEquipeMeninasUserIdRouteImport } from './routes/_authenticated/equipe/meninas/$userId'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -47,11 +56,38 @@ const AcceptInvitationIdRoute = AcceptInvitationIdRouteImport.update({
   path: '/accept-invitation/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedHistoricoRoute = AuthenticatedHistoricoRouteImport.update({
+  id: '/historico',
+  path: '/historico',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedCalendarioRoute = AuthenticatedCalendarioRouteImport.update({
+  id: '/calendario',
+  path: '/calendario',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedOlimpiadasIndexRoute =
+  AuthenticatedOlimpiadasIndexRouteImport.update({
+    id: '/olimpiadas/',
+    path: '/olimpiadas/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedEquipeIndexRoute =
+  AuthenticatedEquipeIndexRouteImport.update({
+    id: '/equipe/',
+    path: '/equipe/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedSettingsTeamsRoute =
   AuthenticatedSettingsTeamsRouteImport.update({
     id: '/settings/teams',
@@ -70,6 +106,23 @@ const AuthenticatedSettingsMembersRoute =
     path: '/settings/members',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedOlimpiadasOlympiadIdRoute =
+  AuthenticatedOlimpiadasOlympiadIdRouteImport.update({
+    id: '/olimpiadas/$olympiadId',
+    path: '/olimpiadas/$olympiadId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedEquipeListaRoute =
+  AuthenticatedEquipeListaRouteImport.update({
+    id: '/equipe/lista',
+    path: '/equipe/lista',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedDevTodosRoute = AuthenticatedDevTodosRouteImport.update({
+  id: '/dev/todos',
+  path: '/dev/todos',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedDevTenantsRoute = AuthenticatedDevTenantsRouteImport.update({
   id: '/dev/tenants',
   path: '/dev/tenants',
@@ -92,24 +145,42 @@ const AuthenticatedDevFormRoute = AuthenticatedDevFormRouteImport.update({
   path: '/dev/form',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedEquipeMeninasUserIdRoute =
+  AuthenticatedEquipeMeninasUserIdRouteImport.update({
+    id: '/equipe/meninas/$userId',
+    path: '/equipe/meninas/$userId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/calendario': typeof AuthenticatedCalendarioRoute
+  '/historico': typeof AuthenticatedHistoricoRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
   '/accept-invitation/$id': typeof AcceptInvitationIdRoute
   '/dev/inbox': typeof DevInboxRoute
   '/dev/form': typeof AuthenticatedDevFormRoute
   '/dev/permissions': typeof AuthenticatedDevPermissionsRoute
   '/dev/richtext-collab': typeof AuthenticatedDevRichtextCollabRoute
   '/dev/tenants': typeof AuthenticatedDevTenantsRoute
+  '/dev/todos': typeof AuthenticatedDevTodosRoute
+  '/equipe/lista': typeof AuthenticatedEquipeListaRoute
+  '/olimpiadas/$olympiadId': typeof AuthenticatedOlimpiadasOlympiadIdRoute
   '/settings/members': typeof AuthenticatedSettingsMembersRoute
   '/settings/org': typeof AuthenticatedSettingsOrgRoute
   '/settings/teams': typeof AuthenticatedSettingsTeamsRoute
+  '/equipe/': typeof AuthenticatedEquipeIndexRoute
+  '/olimpiadas/': typeof AuthenticatedOlimpiadasIndexRoute
+  '/equipe/meninas/$userId': typeof AuthenticatedEquipeMeninasUserIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/calendario': typeof AuthenticatedCalendarioRoute
+  '/historico': typeof AuthenticatedHistoricoRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
   '/accept-invitation/$id': typeof AcceptInvitationIdRoute
   '/dev/inbox': typeof DevInboxRoute
   '/': typeof AuthenticatedIndexRoute
@@ -117,15 +188,24 @@ export interface FileRoutesByTo {
   '/dev/permissions': typeof AuthenticatedDevPermissionsRoute
   '/dev/richtext-collab': typeof AuthenticatedDevRichtextCollabRoute
   '/dev/tenants': typeof AuthenticatedDevTenantsRoute
+  '/dev/todos': typeof AuthenticatedDevTodosRoute
+  '/equipe/lista': typeof AuthenticatedEquipeListaRoute
+  '/olimpiadas/$olympiadId': typeof AuthenticatedOlimpiadasOlympiadIdRoute
   '/settings/members': typeof AuthenticatedSettingsMembersRoute
   '/settings/org': typeof AuthenticatedSettingsOrgRoute
   '/settings/teams': typeof AuthenticatedSettingsTeamsRoute
+  '/equipe': typeof AuthenticatedEquipeIndexRoute
+  '/olimpiadas': typeof AuthenticatedOlimpiadasIndexRoute
+  '/equipe/meninas/$userId': typeof AuthenticatedEquipeMeninasUserIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/calendario': typeof AuthenticatedCalendarioRoute
+  '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
+  '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/accept-invitation/$id': typeof AcceptInvitationIdRoute
   '/dev/inbox': typeof DevInboxRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -133,9 +213,15 @@ export interface FileRoutesById {
   '/_authenticated/dev/permissions': typeof AuthenticatedDevPermissionsRoute
   '/_authenticated/dev/richtext-collab': typeof AuthenticatedDevRichtextCollabRoute
   '/_authenticated/dev/tenants': typeof AuthenticatedDevTenantsRoute
+  '/_authenticated/dev/todos': typeof AuthenticatedDevTodosRoute
+  '/_authenticated/equipe/lista': typeof AuthenticatedEquipeListaRoute
+  '/_authenticated/olimpiadas/$olympiadId': typeof AuthenticatedOlimpiadasOlympiadIdRoute
   '/_authenticated/settings/members': typeof AuthenticatedSettingsMembersRoute
   '/_authenticated/settings/org': typeof AuthenticatedSettingsOrgRoute
   '/_authenticated/settings/teams': typeof AuthenticatedSettingsTeamsRoute
+  '/_authenticated/equipe/': typeof AuthenticatedEquipeIndexRoute
+  '/_authenticated/olimpiadas/': typeof AuthenticatedOlimpiadasIndexRoute
+  '/_authenticated/equipe/meninas/$userId': typeof AuthenticatedEquipeMeninasUserIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -143,19 +229,31 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/admin'
+    | '/calendario'
+    | '/historico'
+    | '/perfil'
     | '/accept-invitation/$id'
     | '/dev/inbox'
     | '/dev/form'
     | '/dev/permissions'
     | '/dev/richtext-collab'
     | '/dev/tenants'
+    | '/dev/todos'
+    | '/equipe/lista'
+    | '/olimpiadas/$olympiadId'
     | '/settings/members'
     | '/settings/org'
     | '/settings/teams'
+    | '/equipe/'
+    | '/olimpiadas/'
+    | '/equipe/meninas/$userId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
     | '/admin'
+    | '/calendario'
+    | '/historico'
+    | '/perfil'
     | '/accept-invitation/$id'
     | '/dev/inbox'
     | '/'
@@ -163,14 +261,23 @@ export interface FileRouteTypes {
     | '/dev/permissions'
     | '/dev/richtext-collab'
     | '/dev/tenants'
+    | '/dev/todos'
+    | '/equipe/lista'
+    | '/olimpiadas/$olympiadId'
     | '/settings/members'
     | '/settings/org'
     | '/settings/teams'
+    | '/equipe'
+    | '/olimpiadas'
+    | '/equipe/meninas/$userId'
   id:
     | '__root__'
     | '/_authenticated'
     | '/login'
     | '/_authenticated/admin'
+    | '/_authenticated/calendario'
+    | '/_authenticated/historico'
+    | '/_authenticated/perfil'
     | '/accept-invitation/$id'
     | '/dev/inbox'
     | '/_authenticated/'
@@ -178,9 +285,15 @@ export interface FileRouteTypes {
     | '/_authenticated/dev/permissions'
     | '/_authenticated/dev/richtext-collab'
     | '/_authenticated/dev/tenants'
+    | '/_authenticated/dev/todos'
+    | '/_authenticated/equipe/lista'
+    | '/_authenticated/olimpiadas/$olympiadId'
     | '/_authenticated/settings/members'
     | '/_authenticated/settings/org'
     | '/_authenticated/settings/teams'
+    | '/_authenticated/equipe/'
+    | '/_authenticated/olimpiadas/'
+    | '/_authenticated/equipe/meninas/$userId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -227,11 +340,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AcceptInvitationIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/perfil': {
+      id: '/_authenticated/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof AuthenticatedPerfilRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/historico': {
+      id: '/_authenticated/historico'
+      path: '/historico'
+      fullPath: '/historico'
+      preLoaderRoute: typeof AuthenticatedHistoricoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/calendario': {
+      id: '/_authenticated/calendario'
+      path: '/calendario'
+      fullPath: '/calendario'
+      preLoaderRoute: typeof AuthenticatedCalendarioRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/olimpiadas/': {
+      id: '/_authenticated/olimpiadas/'
+      path: '/olimpiadas'
+      fullPath: '/olimpiadas/'
+      preLoaderRoute: typeof AuthenticatedOlimpiadasIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/equipe/': {
+      id: '/_authenticated/equipe/'
+      path: '/equipe'
+      fullPath: '/equipe/'
+      preLoaderRoute: typeof AuthenticatedEquipeIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/settings/teams': {
@@ -253,6 +401,27 @@ declare module '@tanstack/react-router' {
       path: '/settings/members'
       fullPath: '/settings/members'
       preLoaderRoute: typeof AuthenticatedSettingsMembersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/olimpiadas/$olympiadId': {
+      id: '/_authenticated/olimpiadas/$olympiadId'
+      path: '/olimpiadas/$olympiadId'
+      fullPath: '/olimpiadas/$olympiadId'
+      preLoaderRoute: typeof AuthenticatedOlimpiadasOlympiadIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/equipe/lista': {
+      id: '/_authenticated/equipe/lista'
+      path: '/equipe/lista'
+      fullPath: '/equipe/lista'
+      preLoaderRoute: typeof AuthenticatedEquipeListaRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/dev/todos': {
+      id: '/_authenticated/dev/todos'
+      path: '/dev/todos'
+      fullPath: '/dev/todos'
+      preLoaderRoute: typeof AuthenticatedDevTodosRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dev/tenants': {
@@ -283,31 +452,57 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDevFormRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/equipe/meninas/$userId': {
+      id: '/_authenticated/equipe/meninas/$userId'
+      path: '/equipe/meninas/$userId'
+      fullPath: '/equipe/meninas/$userId'
+      preLoaderRoute: typeof AuthenticatedEquipeMeninasUserIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedCalendarioRoute: typeof AuthenticatedCalendarioRoute
+  AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
+  AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedDevFormRoute: typeof AuthenticatedDevFormRoute
   AuthenticatedDevPermissionsRoute: typeof AuthenticatedDevPermissionsRoute
   AuthenticatedDevRichtextCollabRoute: typeof AuthenticatedDevRichtextCollabRoute
   AuthenticatedDevTenantsRoute: typeof AuthenticatedDevTenantsRoute
+  AuthenticatedDevTodosRoute: typeof AuthenticatedDevTodosRoute
+  AuthenticatedEquipeListaRoute: typeof AuthenticatedEquipeListaRoute
+  AuthenticatedOlimpiadasOlympiadIdRoute: typeof AuthenticatedOlimpiadasOlympiadIdRoute
   AuthenticatedSettingsMembersRoute: typeof AuthenticatedSettingsMembersRoute
   AuthenticatedSettingsOrgRoute: typeof AuthenticatedSettingsOrgRoute
   AuthenticatedSettingsTeamsRoute: typeof AuthenticatedSettingsTeamsRoute
+  AuthenticatedEquipeIndexRoute: typeof AuthenticatedEquipeIndexRoute
+  AuthenticatedOlimpiadasIndexRoute: typeof AuthenticatedOlimpiadasIndexRoute
+  AuthenticatedEquipeMeninasUserIdRoute: typeof AuthenticatedEquipeMeninasUserIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedCalendarioRoute: AuthenticatedCalendarioRoute,
+  AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
+  AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedDevFormRoute: AuthenticatedDevFormRoute,
   AuthenticatedDevPermissionsRoute: AuthenticatedDevPermissionsRoute,
   AuthenticatedDevRichtextCollabRoute: AuthenticatedDevRichtextCollabRoute,
   AuthenticatedDevTenantsRoute: AuthenticatedDevTenantsRoute,
+  AuthenticatedDevTodosRoute: AuthenticatedDevTodosRoute,
+  AuthenticatedEquipeListaRoute: AuthenticatedEquipeListaRoute,
+  AuthenticatedOlimpiadasOlympiadIdRoute:
+    AuthenticatedOlimpiadasOlympiadIdRoute,
   AuthenticatedSettingsMembersRoute: AuthenticatedSettingsMembersRoute,
   AuthenticatedSettingsOrgRoute: AuthenticatedSettingsOrgRoute,
   AuthenticatedSettingsTeamsRoute: AuthenticatedSettingsTeamsRoute,
+  AuthenticatedEquipeIndexRoute: AuthenticatedEquipeIndexRoute,
+  AuthenticatedOlimpiadasIndexRoute: AuthenticatedOlimpiadasIndexRoute,
+  AuthenticatedEquipeMeninasUserIdRoute: AuthenticatedEquipeMeninasUserIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

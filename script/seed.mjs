@@ -73,6 +73,9 @@ export function seedDevFixtures() {
   runConvex(`npx convex run testing/e2e:seedAdminUser '{"name":"Dev User"}'`, {
     logLabel: 'Seeding dev admin user...',
   });
+  runConvex('npx convex run seedOlimpiadas:run', {
+    logLabel: 'Seeding Lista oficial de olimpíadas...',
+  });
 }
 
 export async function seedE2eFixtures() {

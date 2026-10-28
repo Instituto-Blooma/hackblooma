@@ -1,0 +1,14 @@
+{
+  "name": "Hackblooma · Agenda de Olimpíadas",
+  "short_name": "Olimpíadas",
+  "description": "Datas, provas e resultados das olimpíadas científicas do Instituto Blooma.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fffbf5",
+  "theme_color": "#0209d4",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

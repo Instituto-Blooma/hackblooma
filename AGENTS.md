@@ -83,6 +83,8 @@ Use these terms in issue titles, plans, and user-facing copy. Do not introduce s
 | **Member**               | User's membership in an Organization with a role                                 | user (when meaning the relationship)         |
 | **Platform Admin**       | Startup operator with cross-org access via allowlist + global authz role         | superadmin, god user                         |
 
+Olympiad-calendar terms (Olimpíada, Fase, Participação, Resultado, Aviso, Equipe Blooma…) live in [CONTEXT.md](./CONTEXT.md). Use those words in user-facing copy.
+
 Read [docs/adr/](./docs/adr/) before changing tenancy, onboarding, or platform admin behavior.
 
 ## Documentation map
