@@ -57,7 +57,7 @@ Use the type-safe persona API:
 cy.login('orgAdmin'); // cached session (default)
 cy.login('platformAdmin');
 cy.login('admin', { mode: 'fresh' }); // full OAuth, no session
-cy.login('pending', { mode: 'attempt' }); // OAuth expected to fail
+cy.login('unprovisioned', { mode: 'fresh' }); // new people join the first Organization
 cy.signOut();
 ```
 
@@ -94,17 +94,17 @@ Configure the emulate base URL via `RESEND_EMULATE_URL` in [`cypress.config.ts`]
 
 ## Spec layout
 
-| File                           | Coverage                                                                                         |
-| ------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `00-auth.cy.ts`                | Full OAuth sign-in (`mode: 'fresh'`)                                                             |
-| `01-shell.cy.ts`               | Dashboard shell, 404, theme                                                                      |
-| `02-todos.cy.ts`               | Seeded todos, add row, toggle complete                                                           |
-| `03-onboarding.cy.ts`          | OAuth gates (`mode: 'attempt'`), deferred/immediate invites, inbox, activation (`mode: 'fresh'`) |
-| `04-tenants.cy.ts`             | Org settings, platform admin panel                                                               |
-| `05-permissions.cy.ts`         | Permission demo page by role                                                                     |
-| `06-tenant-isolation.cy.ts`    | UI + server-side cross-org isolation                                                             |
-| `07-platform-org-switch.cy.ts` | Platform admin org switcher                                                                      |
-| `08-form.cy.ts`                | Dev form page — field types, validation, file upload, persistence                                |
+| File                           | Coverage                                                                                   |
+| ------------------------------ | ------------------------------------------------------------------------------------------ |
+| `00-auth.cy.ts`                | Full OAuth sign-in (`mode: 'fresh'`)                                                       |
+| `01-shell.cy.ts`               | Dashboard shell, 404, theme                                                                |
+| `02-todos.cy.ts`               | Seeded todos, add row, toggle complete                                                     |
+| `03-onboarding.cy.ts`          | Open Google sign-in joins first org, optional invites, inbox, activation (`mode: 'fresh'`) |
+| `04-tenants.cy.ts`             | Org settings, platform admin panel                                                         |
+| `05-permissions.cy.ts`         | Permission demo page by role                                                               |
+| `06-tenant-isolation.cy.ts`    | UI + server-side cross-org isolation                                                       |
+| `07-platform-org-switch.cy.ts` | Platform admin org switcher                                                                |
+| `08-form.cy.ts`                | Dev form page — field types, validation, file upload, persistence                          |
 
 ## Out of scope
 

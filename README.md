@@ -1,6 +1,6 @@
 # Hackblooma
 
-Instituto Blooma product on the **convexplate** B2B foundation: **Organizations** with isolated data, **provisioned onboarding** (invite before sign-in), **org-scoped authorization**, and **Platform Admin** tooling.
+Instituto Blooma product on the **convexplate** B2B foundation: **Organizations** with isolated data, **open Google sign-in** (new people join the first Organization, no invite required), **org-scoped authorization**, and **Platform Admin** tooling.
 
 Built on Vite, React, TypeScript, and Convex — with local dev, GitHub CI, and Railway deploy.
 
@@ -8,7 +8,7 @@ Built on Vite, React, TypeScript, and Convex — with local dev, GitHub CI, and 
 
 - **Organizations** (multi-company isolation) via `@djpanda/convex-tenants`
 - **Authorization** via `@djpanda/convex-authz` (org permissions + platform admin role)
-- **Provisioning and invitations** (Resend; emulated locally)
+- **Open Google sign-in** into the first Organization; optional provisioning and invitations (Resend; emulated locally)
 - Google OAuth (emulated in dev; real provider in production)
 - Reference org-scoped feature: todos with ABAC pattern
 - Platform admin UI at `/admin`; org settings at `/settings/*`

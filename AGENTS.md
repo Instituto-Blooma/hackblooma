@@ -1,6 +1,6 @@
 # Agent orientation
 
-**Hackblooma** — Instituto Blooma product built on the **convexplate** B2B foundation (Organizations, provisioned onboarding, org-scoped authorization, and Platform Admin tooling).
+**Hackblooma** — Instituto Blooma product built on the **convexplate** B2B foundation (Organizations, open Google sign-in into the first Organization, org-scoped authorization, and Platform Admin tooling).
 
 ## Who you are talking to
 
@@ -72,16 +72,16 @@ See [SETUP.md](./SETUP.md) for the full environment matrix and troubleshooting.
 
 Use these terms in issue titles, plans, and user-facing copy. Do not introduce synonyms the template avoids.
 
-| Term                     | Meaning                                                                          | Avoid                                        |
-| ------------------------ | -------------------------------------------------------------------------------- | -------------------------------------------- |
-| **Organization**         | B2B customer company — primary data-isolation boundary                           | tenant, workspace, account (for the company) |
-| **User**                 | Person identified by email at provisioning; linked to Google OAuth at activation | member (when meaning the person)             |
-| **Provisioning**         | Creating a User + org Membership before first sign-in                            | invite (as the provisioning act)             |
-| **Activation**           | User completes onboarding — accepts Invitation, signs in, gains access           | sign-up, registration                        |
-| **Invitation**           | Email with link to accept membership; distinct from onboarding lifecycle         | invite (as noun for the User record)         |
-| **Onboarding lifecycle** | `pending` → `invited` → `active`                                                 | account status, user state                   |
-| **Member**               | User's membership in an Organization with a role                                 | user (when meaning the relationship)         |
-| **Platform Admin**       | Startup operator with cross-org access via allowlist + global authz role         | superadmin, god user                         |
+| Term                     | Meaning                                                                         | Avoid                                        |
+| ------------------------ | ------------------------------------------------------------------------------- | -------------------------------------------- |
+| **Organization**         | B2B customer company — primary data-isolation boundary                          | tenant, workspace, account (for the company) |
+| **User**                 | Person who signs in with Google; joined to the first Organization on Activation | member (when meaning the person)             |
+| **Provisioning**         | Optional admin step: create a User + org Membership before first sign-in        | invite (as the provisioning act)             |
+| **Activation**           | User signs in with Google and is assigned to an Organization                    | sign-up, registration                        |
+| **Invitation**           | Optional email with a link to join a specific Organization                      | invite (as noun for the User record)         |
+| **Onboarding lifecycle** | `pending` → `invited` → `active`                                                | account status, user state                   |
+| **Member**               | User's membership in an Organization with a role                                | user (when meaning the relationship)         |
+| **Platform Admin**       | Startup operator with cross-org access via allowlist + global authz role        | superadmin, god user                         |
 
 Olympiad-calendar terms (Olimpíada, Fase, Participação, Resultado, Aviso, Equipe Blooma…) live in [CONTEXT.md](./CONTEXT.md). Use those words in user-facing copy.
 

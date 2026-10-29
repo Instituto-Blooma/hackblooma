@@ -96,5 +96,5 @@ _Avoid_: Dashboard, relatório, monitoramento
 
 ## Flagged ambiguities
 
-- O app foi construído para vários grupos separados (Organization). No Hackblooma existe um grupo só, o Instituto Blooma, sem turmas: a **Equipe Blooma** vê todas as meninas.
+- O app foi construído para vários grupos separados (Organization). No Hackblooma existe um grupo só, o Instituto Blooma, sem turmas: a **Equipe Blooma** vê todas as meninas. Quem entra com o Google entra nesse grupo na hora, sem convite.
 - "Resultado" era usado para duas coisas diferentes. Agora a **Divulgação do resultado** é o dia em que sai a lista oficial, e o **Resultado** é o que a menina conquistou.

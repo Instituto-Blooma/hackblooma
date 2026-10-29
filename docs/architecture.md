@@ -59,27 +59,21 @@ convex/
 
 ```mermaid
 sequenceDiagram
-  participant Admin
-  participant Provisioning
-  participant Email
   participant User
   participant Auth
+  participant Onboarding
+  participant Org
 
-  Admin->>Provisioning: provision User + Membership
-  Provisioning->>Provisioning: lifecycle pending
-  Admin->>Provisioning: send Invitation
-  Provisioning->>Email: invitation email
-  Provisioning->>Provisioning: lifecycle invited
   User->>Auth: Google sign-in
-  Auth->>Provisioning: assertOAuthAllowed
-  Auth->>Provisioning: activateOnboarding
-  Provisioning->>Provisioning: lifecycle active
+  Auth->>Onboarding: completeOnboarding
+  Onboarding->>Org: join first created Organization
+  Onboarding->>Onboarding: lifecycle active
 ```
 
-- `convex/auth.ts` — `createOrUpdateUser` calls `onboarding.assertOAuthAllowed` then `activateOnboarding`
-- `convex/lib/onboarding.ts` — patches `users.onboardingStatus` and coordinates pending Invitations
+- `convex/auth.ts` — `createOrUpdateUser` activates onboarding during sign-in
+- `convex/lib/onboarding.ts` — auto-joins the first created Organization (creates Instituto Blooma if none exist). Optional Invitations are still accepted when present.
 
-See [onboarding.md](./onboarding.md) for product-facing flows.
+See [onboarding.md](./onboarding.md) for product-facing flows. ADR: [0004](./adr/0004-auto-join-first-organization.md).
 
 ## Authorization model
 

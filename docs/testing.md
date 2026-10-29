@@ -54,7 +54,7 @@ Writes `cypress/fixtures/e2e-context.json` via `testing/e2e:reset`. Run before o
 | `00-auth.cy.ts`                | Full OAuth (`mode: 'fresh'`)                                                          |
 | `01-shell.cy.ts`               | Dashboard, 404, theme                                                                 |
 | `02-todos.cy.ts`               | Org-scoped todos                                                                      |
-| `03-onboarding.cy.ts`          | OAuth gates, deferred/immediate invites, activation                                   |
+| `03-onboarding.cy.ts`          | Open Google sign-in joins first org, optional invites, activation                     |
 | `04-tenants.cy.ts`             | Org settings, platform admin panel                                                    |
 | `05-permissions.cy.ts`         | Role permission matrix                                                                |
 | `06-tenant-isolation.cy.ts`    | Cross-Organization isolation                                                          |

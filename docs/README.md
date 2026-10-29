@@ -8,7 +8,7 @@ Guides for forked B2B startups using this template. Domain vocabulary in [AGENTS
 | -------------------------------------------------- | ---------------------- | ---------------------------------------------------------------------- |
 | [architecture.md](./architecture.md)               | Developers, AI agents  | Backend modules, routes, auth and permission model                     |
 | [frontend.md](./frontend.md)                       | Developers, AI agents  | shadcn/ui, forms, toast, UI conventions for this template              |
-| [onboarding.md](./onboarding.md)                   | Product, developers    | Provisioning, invitations, OAuth gates, lifecycle states               |
+| [onboarding.md](./onboarding.md)                   | Product, developers    | Open Google sign-in, optional invitations, lifecycle states            |
 | [environment.md](./environment.md)                 | Ops, developers        | Convex and Vite env vars, emulators, production                        |
 | [customization.md](./customization.md)             | Fork owners            | Checklist after remixing the template                                  |
 | [updating-downstream.md](./updating-downstream.md) | Fork owners, AI agents | Port template changes into downstream apps; `.convexplate-last-commit` |
@@ -29,6 +29,7 @@ Guides for forked B2B startups using this template. Domain vocabulary in [AGENTS
 | ADR                                                                                         | Topic                                                   |
 | ------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
 | [0001 B2B tenancy and platform admin](./adr/0001-b2b-tenancy-and-platform-admin.md)         | Organizations, onboarding, authz, impersonation, email  |
+| [0004 Auto-join first Organization](./adr/0004-auto-join-first-organization.md)             | New people join the first org; no invitation required   |
 | [0002 Yjs collab and org-scoped presence](./adr/0002-yjs-collab-and-org-scoped-presence.md) | RichText collab, markdown snapshots, DataTable presence |
 | [0003 PR preview public Convex HTTP](./adr/0003-pr-preview-public-convex-http.md)           | Local Convex on `/_convex` and `/_convex_site`          |
 

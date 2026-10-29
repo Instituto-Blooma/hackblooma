@@ -18,23 +18,23 @@ describe('Onboarding', () => {
   });
 
   describe('Onboarding gates', () => {
-    it('blocks Google sign-in for pending users without an invitation', () => {
-      cy.login('pending', { mode: 'attempt' });
-      cy.get('[data-testid="button-user-menu"]').should('not.exist');
-      cy.get('[data-testid="button-google-signin"]').should('be.visible');
-    });
-
-    it('blocks Google sign-in for unprovisioned users', () => {
-      cy.login('unprovisioned', { mode: 'attempt' });
-      cy.get('[data-testid="button-user-menu"]').should('not.exist');
-      cy.get('[data-testid="button-google-signin"]').should('be.visible');
-    });
-
     it('shows pending user row on platform admin panel', () => {
       cy.loadE2eContext().then((ctx) => {
         visitPlatformAdminProvisionedOrg(ctx.orgAId);
         assertPendingInviteRow(ctx.pendingUserEmail);
       });
+    });
+
+    it('lets a pending user sign in without waiting for an invitation email', () => {
+      cy.login('pending', { mode: 'fresh' });
+      cy.get('[data-testid="button-user-menu"]').should('be.visible');
+      cy.get('[data-testid="org-name-label"]').should('be.visible');
+    });
+
+    it('assigns a new Google user to the first created organization', () => {
+      cy.login('unprovisioned', { mode: 'fresh' });
+      cy.get('[data-testid="button-user-menu"]').should('be.visible');
+      cy.get('[data-testid="org-name-label"]').should('be.visible');
     });
   });
 

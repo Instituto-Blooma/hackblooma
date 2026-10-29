@@ -508,7 +508,7 @@ export function Dashboard() {
             >
               {onboardingStatus?.status === 'invited'
                 ? 'Your invitation is ready. Sign in with Google using your invited email to activate access.'
-                : 'Waiting for an organization invitation. Contact your administrator.'}
+                : 'Setting up your group access. Refresh if this takes more than a moment.'}
             </div>
           ) : null}
 

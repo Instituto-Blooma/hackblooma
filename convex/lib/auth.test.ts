@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { isAllowlistedPlatformEmail } from './auth';
-import { isOAuthAllowedStatus } from './onboarding';
 import { FIRST_SETUP_ORG_NAME, FIRST_SETUP_ORG_SLUG } from '../testing/e2e';
 
 const FIRST_SETUP_ADMIN_EMAILS = [
@@ -35,17 +34,6 @@ describe('first-setup OAuth allowlist', () => {
 
     expect(isAllowlistedPlatformEmail('ops@startup.com')).toBe(true);
     expect(isAllowlistedPlatformEmail('unprovisioned@example.com')).toBe(false);
-  });
-});
-
-describe('OAuth onboarding gate', () => {
-  it('treats a seeded user with no onboarding status as blocked', () => {
-    expect(isOAuthAllowedStatus(undefined)).toBe(false);
-  });
-
-  it('allows invited and active users', () => {
-    expect(isOAuthAllowedStatus('invited')).toBe(true);
-    expect(isOAuthAllowedStatus('active')).toBe(true);
   });
 });
 

@@ -1,16 +1,32 @@
 import { ConvexError } from 'convex/values';
+import { components } from '../_generated/api';
 import type { Id } from '../_generated/dataModel';
 import type { MutationCtx, QueryCtx } from '../_generated/server';
-import { bootstrapPlatformAdmin, isAllowlistedPlatformEmail } from './auth';
+import { authz } from '../authz';
+import { bootstrapPlatformAdmin, orgScope } from './auth';
 import { tenantsClient } from './tenantsClient';
-import { findUsersByEmail, normalizeEmail, resolveCanonicalUserByEmail } from './users';
+import { findUsersByEmail, normalizeEmail } from './users';
 
 type DbCtx = QueryCtx | MutationCtx;
 
 export type OnboardingStatus = 'pending' | 'invited' | 'active';
 
-export function isOAuthAllowedStatus(status: OnboardingStatus | undefined): boolean {
-  return status === 'active' || status === 'invited';
+export const DEFAULT_ORGANIZATION_NAME = 'Instituto Blooma';
+export const DEFAULT_ORGANIZATION_SLUG = 'instituto-blooma';
+
+export function isOAuthAllowedStatus(_status: OnboardingStatus | undefined): boolean {
+  return true;
+}
+
+export function pickFirstCreatedOrganization<T extends { _id: string; _creationTime: number }>(
+  organizations: T[]
+): T | null {
+  if (organizations.length === 0) {
+    return null;
+  }
+  return organizations.reduce((earliest, organization) =>
+    organization._creationTime < earliest._creationTime ? organization : earliest
+  );
 }
 
 export function toUserId(userId: string): Id<'users'> {
@@ -163,26 +179,103 @@ export async function assertSingleOrgOrThrow(
   }
 }
 
-export async function assertOAuthAllowed(ctx: MutationCtx, email: string) {
-  const normalized = normalizeEmail(email);
-  if (isAllowlistedPlatformEmail(normalized)) {
-    return { allowed: true as const };
+export async function assertOAuthAllowed(_ctx: MutationCtx, _email: string) {
+  return { allowed: true as const };
+}
+
+async function listAllOrganizations(ctx: MutationCtx) {
+  const organizations: Array<{
+    _id: string;
+    _creationTime: number;
+    ownerId: string;
+    status?: 'active' | 'suspended' | 'archived';
+  }> = [];
+  let cursor: string | null = null;
+
+  while (true) {
+    const page: { page: string[]; isDone: boolean; continueCursor: string } = await ctx.runQuery(
+      components.tenants.organizations.listAllOrganizationIds,
+      {
+        paginationOpts: { numItems: 100, cursor },
+      }
+    );
+    for (const organizationId of page.page) {
+      const organization = await tenantsClient.getOrganization(ctx, organizationId);
+      if (organization && (organization.status ?? 'active') === 'active') {
+        organizations.push(organization);
+      }
+    }
+    if (page.isDone) {
+      break;
+    }
+    cursor = page.continueCursor;
   }
 
-  const user = await resolveCanonicalUserByEmail(ctx, normalized);
-  if (!user) {
-    return { allowed: false as const, reason: 'no_account' as const };
+  return organizations;
+}
+
+async function addOrgMemberWithoutInvite(
+  ctx: MutationCtx,
+  organizationId: string,
+  memberUserId: Id<'users'>,
+  role: 'admin' | 'member',
+  actorUserId: string
+) {
+  const existing = await tenantsClient.getMember(ctx, organizationId, memberUserId);
+  if (!existing) {
+    await ctx.runMutation(components.tenants.members.addMember, {
+      userId: actorUserId,
+      organizationId,
+      memberUserId,
+      role,
+    });
   }
 
-  if (isOAuthAllowedStatus(user.onboardingStatus)) {
-    return { allowed: true as const };
+  const tenantAuthz = authz.withTenant(organizationId);
+  const hasRole = await tenantAuthz.hasRole(ctx, memberUserId, role, orgScope(organizationId));
+  if (!hasRole) {
+    await tenantAuthz.assignRole(
+      ctx,
+      memberUserId,
+      role,
+      orgScope(organizationId),
+      undefined,
+      actorUserId
+    );
+  } else {
+    await tenantAuthz.recomputeUser(ctx, memberUserId);
+  }
+}
+
+async function ensureDefaultOrganization(ctx: MutationCtx, userId: Id<'users'>) {
+  const existing = pickFirstCreatedOrganization(await listAllOrganizations(ctx));
+  if (existing) {
+    return existing;
   }
 
-  if (user.onboardingStatus === 'pending') {
-    return { allowed: false as const, reason: 'pending_invite' as const };
+  const bySlug = await tenantsClient.getOrganizationBySlug(ctx, DEFAULT_ORGANIZATION_SLUG);
+  if (bySlug) {
+    return bySlug;
   }
 
-  return { allowed: false as const, reason: 'no_account' as const };
+  const organizationId = await ctx.runMutation(
+    components.tenants.organizations.createOrganization,
+    {
+      userId,
+      name: DEFAULT_ORGANIZATION_NAME,
+      slug: DEFAULT_ORGANIZATION_SLUG,
+      creatorRole: 'admin',
+    }
+  );
+  await authz
+    .withTenant(organizationId)
+    .assignRole(ctx, userId, 'admin', orgScope(organizationId), undefined, userId);
+
+  const created = await tenantsClient.getOrganization(ctx, organizationId);
+  if (!created) {
+    throw new ConvexError('Could not create the default organization');
+  }
+  return created;
 }
 
 export async function completeOnboarding(ctx: MutationCtx, userId: Id<'users'>, email: string) {
@@ -194,38 +287,32 @@ export async function completeOnboarding(ctx: MutationCtx, userId: Id<'users'>, 
     return { activated: false as const };
   }
 
-  if (user.onboardingStatus === 'pending') {
-    throw new ConvexError('Invitation has not been sent yet');
-  }
-
-  if (user.onboardingStatus === 'active') {
-    const organizations = await tenantsClient.listOrganizations(ctx, userId);
-    return organizations[0]
-      ? { activated: true as const, organizationId: organizations[0]._id }
-      : { activated: false as const };
-  }
-
-  const invitation = await getFirstActiveInvitation(ctx, normalized);
-  if (invitation) {
-    const singleOrg = await checkSingleOrg(ctx, normalized, invitation.organizationId);
-    if (!singleOrg.ok) {
-      throw new ConvexError('User already belongs to another organization');
-    }
-
-    await tenantsClient.acceptInvitation(ctx, invitation._id, userId, {
-      acceptingUserIdentifier: normalized,
-    });
-    await markUserActive(ctx, userId);
-    return { activated: true as const, organizationId: invitation.organizationId };
-  }
-
   const organizations = await tenantsClient.listOrganizations(ctx, userId);
   if (organizations.length > 0) {
     await markUserActive(ctx, userId);
     return { activated: true as const, organizationId: organizations[0]._id };
   }
 
-  return { activated: false as const };
+  const invitation = await getFirstActiveInvitation(ctx, normalized);
+  if (invitation) {
+    const singleOrg = await checkSingleOrg(ctx, normalized, invitation.organizationId);
+    if (singleOrg.ok) {
+      await tenantsClient.acceptInvitation(ctx, invitation._id, userId, {
+        acceptingUserIdentifier: normalized,
+      });
+      await markUserActive(ctx, userId);
+      return { activated: true as const, organizationId: invitation.organizationId };
+    }
+  }
+
+  const organization = await ensureDefaultOrganization(ctx, userId);
+  const alreadyMember = await tenantsClient.getMember(ctx, organization._id, userId);
+  if (!alreadyMember) {
+    await addOrgMemberWithoutInvite(ctx, organization._id, userId, 'member', organization.ownerId);
+  }
+
+  await markUserActive(ctx, userId);
+  return { activated: true as const, organizationId: organization._id };
 }
 
 export async function seedActiveUser(ctx: MutationCtx, userId: Id<'users'>) {

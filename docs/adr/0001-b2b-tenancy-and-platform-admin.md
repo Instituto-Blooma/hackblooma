@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted. Onboarding / OAuth gate superseded by [ADR 0004](./0004-auto-join-first-organization.md).
 
 ## Context
 
@@ -25,11 +25,13 @@ This template serves B2B customers where each company is an isolated Organizatio
 
 ### Onboarding flow
 
+Superseded for Hackblooma by [ADR 0004](./0004-auto-join-first-organization.md): Google sign-in auto-joins the first created Organization. Invitation is optional, not a gate.
+
+Original template flow (still available as an optional Platform Admin extra):
+
 1. **Provision** — admin creates User record + org Membership; User `onboardingStatus` → `pending`.
 2. **Invite** — invitation email sent via Resend (emulated locally on `:4003`); status → `invited`.
 3. **Activate** — invited User signs in with Google; email match → `active`.
-
-OAuth is blocked until an invite is sent. Unprovisioned emails are rejected at sign-in. Product flows: [onboarding.md](../onboarding.md). Vocabulary: [AGENTS.md](../../AGENTS.md).
 
 ### Invitation policy
 

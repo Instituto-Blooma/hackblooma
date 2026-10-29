@@ -1,10 +1,9 @@
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { ConvexError } from 'convex/values';
 import type { Id } from '../_generated/dataModel';
-import { internal } from '../_generated/api';
 import type { MutationCtx, QueryCtx } from '../_generated/server';
 import { authz } from '../authz';
-import { assertOAuthAllowed } from './onboarding';
+import { assertOAuthAllowed, completeOnboarding } from './onboarding';
 import { normalizeEmail, resolveCanonicalUserByEmail } from './users';
 
 export function orgScope(orgId: string) {
@@ -114,13 +113,10 @@ export async function bootstrapPlatformAdmin(ctx: MutationCtx, userId: Id<'users
   }
 }
 
-async function scheduleActivation(ctx: MutationCtx, userId: Id<'users'>, email: string) {
+async function activateSignedInUser(ctx: MutationCtx, userId: Id<'users'>, email: string) {
   const canonical = await resolveCanonicalUserByEmail(ctx, email);
   const targetUserId = canonical?._id ?? userId;
-  await ctx.scheduler.runAfter(0, internal.onboarding.activateOnboarding, {
-    userId: targetUserId,
-    email,
-  });
+  await completeOnboarding(ctx, targetUserId, email);
 }
 
 export async function createOrUpdateOAuthUser(
@@ -139,13 +135,7 @@ export async function createOrUpdateOAuthUser(
     throw new ConvexError('Email is required');
   }
 
-  const gate = await assertOAuthAllowed(ctx, email);
-  if (!gate.allowed) {
-    if (gate.reason === 'pending_invite') {
-      throw new ConvexError('Your invitation has not been sent yet. Contact your administrator.');
-    }
-    throw new ConvexError('No account found. Contact your administrator.');
-  }
+  await assertOAuthAllowed(ctx, email);
 
   const existingUser = args.existingUserId
     ? await ctx.db.get(args.existingUserId)
@@ -158,7 +148,7 @@ export async function createOrUpdateOAuthUser(
       image: args.profile.image ?? existingUser.image,
       emailVerificationTime: existingUser.emailVerificationTime ?? Date.now(),
     });
-    await scheduleActivation(ctx, existingUser._id, email);
+    await activateSignedInUser(ctx, existingUser._id, email);
     return existingUser._id;
   }
 
@@ -169,7 +159,7 @@ export async function createOrUpdateOAuthUser(
     emailVerificationTime: Date.now(),
   });
 
-  await scheduleActivation(ctx, userId, email);
+  await activateSignedInUser(ctx, userId, email);
 
   return userId;
 }
